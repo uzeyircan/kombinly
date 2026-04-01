@@ -173,7 +173,6 @@ class _AddClothingPageState extends State<AddClothingPage> {
       }
 
       double aspectRatio = 1.0;
-      final fitProfile = garmentProcessor.resolveFitProfile(_selectedCategory);
 
       if (finalImageUrl != null && finalImageUrl.isNotEmpty) {
         try {
@@ -183,6 +182,10 @@ class _AddClothingPageState extends State<AddClothingPage> {
         }
       }
 
+      final fitProfile = garmentProcessor.resolveFitProfile(
+        _selectedCategory,
+        aspectRatio,
+      );
       final smartPlacement = smartPlacementService.resolve(
         category: _selectedCategory,
         aspectRatio: aspectRatio,

@@ -7,17 +7,19 @@ class ClothingItem {
   final String color;
   final String season;
   final String occasion;
+
   final String? imageUrl;
   final String? processedImageUrl;
+
   final double cropScale;
   final double offsetX;
   final double offsetY;
   final double rotation;
+
   final double? aspectRatio;
   final String? fitProfile;
   final bool isProcessed;
 
-  // Yeni placement alanları
   final String? targetSlot;
   final double? anchorX;
   final double? anchorY;
@@ -64,7 +66,6 @@ class ClothingItem {
       aspectRatio: (map['aspect_ratio'] as num?)?.toDouble(),
       fitProfile: map['fit_profile'] as String?,
       isProcessed: (map['is_processed'] as bool?) ?? false,
-
       targetSlot: map['target_slot'] as String?,
       anchorX: (map['anchor_x'] as num?)?.toDouble(),
       anchorY: (map['anchor_y'] as num?)?.toDouble(),
@@ -90,7 +91,6 @@ class ClothingItem {
       'aspect_ratio': aspectRatio,
       'fit_profile': fitProfile,
       'is_processed': isProcessed,
-
       'target_slot': targetSlot,
       'anchor_x': anchorX,
       'anchor_y': anchorY,
@@ -145,6 +145,13 @@ class ClothingItem {
     );
   }
 
+  String? get renderImageUrl {
+    if (processedImageUrl != null && processedImageUrl!.isNotEmpty) {
+      return processedImageUrl;
+    }
+    return imageUrl;
+  }
+
   ClothingPlacement get effectivePlacement {
     return ClothingPlacement(
       targetSlot: targetSlot ?? _defaultTargetSlotForCategory(category),
@@ -179,7 +186,7 @@ class ClothingItem {
   static double _defaultAnchorYForCategory(String category) {
     switch (category.trim().toLowerCase()) {
       case 'top':
-        return 0.18;
+        return 0.08;
       case 'bottom':
         return 0.10;
       case 'outerwear':

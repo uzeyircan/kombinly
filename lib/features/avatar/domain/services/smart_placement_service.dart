@@ -58,38 +58,30 @@ class SmartPlacementService {
     required double aspectRatio,
     String? fitProfile,
   }) {
-    double cropScale = 1.0;
-    double offsetY = -10.0;
+    double cropScale;
+    double offsetY;
 
-    if (aspectRatio < 0.65) {
-      cropScale = 0.90;
-      offsetY = -22.0;
-    } else if (aspectRatio < 0.82) {
-      cropScale = 0.98;
-      offsetY = -16.0;
-    } else if (aspectRatio < 1.05) {
-      cropScale = 1.05;
-      offsetY = -10.0;
-    } else {
-      cropScale = 1.12;
-      offsetY = -4.0;
-    }
+    switch (fitProfile) {
+      case 'long_top':
+        cropScale = 1.15;
+        offsetY = 10;
+        break;
 
-    if (fitProfile == 'oversized_top') {
-      cropScale -= 0.06;
-      offsetY += 4.0;
-    }
+      case 'oversized_top':
+        cropScale = 1.10;
+        offsetY = 4;
+        break;
 
-    if (fitProfile == 'slim_top') {
-      cropScale += 0.04;
-      offsetY -= 2.0;
+      default: // regular
+        cropScale = 1.22;
+        offsetY = -6;
     }
 
     return SmartPlacementResult(
       cropScale: cropScale,
-      offsetX: 0.0,
+      offsetX: 0,
       offsetY: offsetY,
-      rotation: 0.0,
+      rotation: 0,
     );
   }
 

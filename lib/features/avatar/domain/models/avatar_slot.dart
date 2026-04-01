@@ -22,9 +22,9 @@ class AvatarSlots {
   static const AvatarSlot upperBody = AvatarSlot(
     id: 'upper_body',
     centerX: 0.50,
-    centerY: 0.30,
-    widthRatio: 0.42,
-    heightRatio: 0.26,
+    centerY: 0.31,
+    widthRatio: 0.56,
+    heightRatio: 0.36,
     zIndex: 20,
   );
 
