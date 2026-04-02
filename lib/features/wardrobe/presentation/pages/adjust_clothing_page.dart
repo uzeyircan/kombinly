@@ -42,7 +42,7 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
     rotation = widget.item.rotation;
   }
 
-  double _defaultAspectRatioForCategory(String category) {
+  double _fallbackAspectRatioForCategory(String category) {
     switch (category.trim().toLowerCase()) {
       case 'top':
         return 220 / 185;
@@ -55,6 +55,14 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
       default:
         return 1.0;
     }
+  }
+
+  double _resolvedAspectRatio() {
+    final value = widget.item.aspectRatio;
+    if (value != null && value > 0) {
+      return value;
+    }
+    return _fallbackAspectRatioForCategory(widget.item.category);
   }
 
   AvatarSlot _resolveSlot() {
@@ -75,7 +83,7 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
       canvasSize: canvasSize,
       slot: slot,
       placement: placement,
-      imageAspectRatio: _defaultAspectRatioForCategory(widget.item.category),
+      imageAspectRatio: _resolvedAspectRatio(),
       extraScaleMultiplier: localScale,
       offsetX: localOffsetX,
       offsetY: localOffsetY,
@@ -250,9 +258,11 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = widget.item.imageUrl;
+    final imageUrl = widget.item.renderImageUrl;
 
     final previewItem = widget.item.copyWith(
+      imageUrl: widget.item.imageUrl,
+      processedImageUrl: widget.item.processedImageUrl,
       cropScale: scale,
       offsetX: offsetX,
       offsetY: offsetY,

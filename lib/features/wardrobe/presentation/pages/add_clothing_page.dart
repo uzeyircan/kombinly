@@ -210,6 +210,8 @@ class _AddClothingPageState extends State<AddClothingPage> {
             'aspect_ratio': aspectRatio,
             'fit_profile': fitProfile,
             'is_processed': finalImageUrl != null,
+            'needs_review': false,
+            'last_processed_at': DateTime.now().toIso8601String(),
           })
           .select()
           .single();

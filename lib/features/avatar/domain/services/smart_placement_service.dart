@@ -10,6 +10,12 @@ class SmartPlacementResult {
     required this.offsetY,
     required this.rotation,
   });
+
+  const SmartPlacementResult.defaultPlacement()
+    : cropScale = 1.0,
+      offsetX = 0.0,
+      offsetY = 0.0,
+      rotation = 0.0;
 }
 
 class SmartPlacementService {
@@ -45,12 +51,7 @@ class SmartPlacementService {
           fitProfile: normalizedFitProfile,
         );
       default:
-        return const SmartPlacementResult(
-          cropScale: 1.0,
-          offsetX: 0.0,
-          offsetY: 0.0,
-          rotation: 0.0,
-        );
+        return const SmartPlacementResult.defaultPlacement();
     }
   }
 
@@ -63,25 +64,26 @@ class SmartPlacementService {
 
     switch (fitProfile) {
       case 'long_top':
-        cropScale = 1.15;
-        offsetY = 10;
+        cropScale = 1.18;
+        offsetY = 2.0;
         break;
 
       case 'oversized_top':
         cropScale = 1.10;
-        offsetY = 4;
+        offsetY = 4.0;
         break;
 
-      default: // regular
-        cropScale = 1.22;
-        offsetY = -6;
+      default:
+        cropScale = 1.24;
+        offsetY = -10.0;
+        break;
     }
 
     return SmartPlacementResult(
       cropScale: cropScale,
-      offsetX: 0,
+      offsetX: 0.0,
       offsetY: offsetY,
-      rotation: 0,
+      rotation: 0.0,
     );
   }
 
@@ -96,7 +98,7 @@ class SmartPlacementService {
       cropScale = 0.92;
       offsetY = 18.0;
     } else if (aspectRatio < 0.68) {
-      cropScale = 1.0;
+      cropScale = 1.00;
       offsetY = 10.0;
     } else if (aspectRatio < 0.90) {
       cropScale = 1.06;
@@ -114,6 +116,11 @@ class SmartPlacementService {
     if (fitProfile == 'skinny_bottom') {
       cropScale += 0.03;
       offsetY -= 2.0;
+    }
+
+    if (fitProfile == 'long_bottom') {
+      cropScale += 0.02;
+      offsetY += 6.0;
     }
 
     return SmartPlacementResult(
@@ -138,7 +145,7 @@ class SmartPlacementService {
       cropScale = 0.92;
       offsetY = 16.0;
     } else if (aspectRatio < 2.20) {
-      cropScale = 1.0;
+      cropScale = 1.00;
       offsetY = 22.0;
     } else {
       cropScale = 1.08;

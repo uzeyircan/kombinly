@@ -19,6 +19,8 @@ class ClothingItem {
   final double? aspectRatio;
   final String? fitProfile;
   final bool isProcessed;
+  final bool needsReview;
+  final DateTime? lastProcessedAt;
 
   final String? targetSlot;
   final double? anchorX;
@@ -42,6 +44,8 @@ class ClothingItem {
     required this.aspectRatio,
     required this.fitProfile,
     required this.isProcessed,
+    required this.needsReview,
+    required this.lastProcessedAt,
     this.targetSlot,
     this.anchorX,
     this.anchorY,
@@ -66,6 +70,10 @@ class ClothingItem {
       aspectRatio: (map['aspect_ratio'] as num?)?.toDouble(),
       fitProfile: map['fit_profile'] as String?,
       isProcessed: (map['is_processed'] as bool?) ?? false,
+      needsReview: (map['needs_review'] as bool?) ?? false,
+      lastProcessedAt: map['last_processed_at'] != null
+          ? DateTime.tryParse(map['last_processed_at'] as String)
+          : null,
       targetSlot: map['target_slot'] as String?,
       anchorX: (map['anchor_x'] as num?)?.toDouble(),
       anchorY: (map['anchor_y'] as num?)?.toDouble(),
@@ -91,6 +99,8 @@ class ClothingItem {
       'aspect_ratio': aspectRatio,
       'fit_profile': fitProfile,
       'is_processed': isProcessed,
+      'needs_review': needsReview,
+      'last_processed_at': lastProcessedAt?.toIso8601String(),
       'target_slot': targetSlot,
       'anchor_x': anchorX,
       'anchor_y': anchorY,
@@ -115,6 +125,8 @@ class ClothingItem {
     double? aspectRatio,
     String? fitProfile,
     bool? isProcessed,
+    bool? needsReview,
+    DateTime? lastProcessedAt,
     String? targetSlot,
     double? anchorX,
     double? anchorY,
@@ -137,6 +149,8 @@ class ClothingItem {
       aspectRatio: aspectRatio ?? this.aspectRatio,
       fitProfile: fitProfile ?? this.fitProfile,
       isProcessed: isProcessed ?? this.isProcessed,
+      needsReview: needsReview ?? this.needsReview,
+      lastProcessedAt: lastProcessedAt ?? this.lastProcessedAt,
       targetSlot: targetSlot ?? this.targetSlot,
       anchorX: anchorX ?? this.anchorX,
       anchorY: anchorY ?? this.anchorY,

@@ -30,6 +30,8 @@ class FitEngine {
     double offsetX = 0.0,
     double offsetY = 0.0,
   }) {
+    final safeAspectRatio = imageAspectRatio <= 0 ? 1.0 : imageAspectRatio;
+
     final slotWidth = slot.widthRatio * canvasSize.width;
     final slotHeight = slot.heightRatio * canvasSize.height;
 
@@ -38,28 +40,38 @@ class FitEngine {
 
     switch (placement.fitStrategy) {
       case FitStrategy.contain:
-        targetWidth = slotWidth;
-        targetHeight = targetWidth / imageAspectRatio;
+        final widthBasedHeight = slotWidth / safeAspectRatio;
 
-        if (targetHeight > slotHeight) {
+        if (widthBasedHeight <= slotHeight) {
+          targetWidth = slotWidth;
+          targetHeight = widthBasedHeight;
+        } else {
           targetHeight = slotHeight;
-          targetWidth = targetHeight * imageAspectRatio;
+          targetWidth = targetHeight * safeAspectRatio;
         }
         break;
 
       case FitStrategy.coverWidth:
         targetWidth = slotWidth;
-        targetHeight = targetWidth / imageAspectRatio;
+        targetHeight = targetWidth / safeAspectRatio;
         break;
 
       case FitStrategy.coverHeight:
         targetHeight = slotHeight;
-        targetWidth = targetHeight * imageAspectRatio;
+        targetWidth = targetHeight * safeAspectRatio;
         break;
     }
 
     targetWidth *= extraScaleMultiplier;
     targetHeight *= extraScaleMultiplier;
+
+    // Aşırı taşmaları biraz yumuşat.
+    // Bu tamamen kusursuz çözüm değil ama V1 için stabilite sağlar.
+    final maxWidth = slotWidth * 1.35;
+    final maxHeight = slotHeight * 1.45;
+
+    targetWidth = targetWidth.clamp(1.0, maxWidth);
+    targetHeight = targetHeight.clamp(1.0, maxHeight);
 
     final slotCenter = Offset(
       slot.centerX * canvasSize.width,
@@ -72,8 +84,8 @@ class FitEngine {
     );
 
     return FitResult(
-      width: math.max(1, targetWidth),
-      height: math.max(1, targetHeight),
+      width: math.max(1.0, targetWidth),
+      height: math.max(1.0, targetHeight),
       topLeft: topLeft,
       zIndex: slot.zIndex,
     );

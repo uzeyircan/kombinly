@@ -16,41 +16,43 @@ class AvatarSlot {
   });
 }
 
-/// Uygulamanın ilk sürümü için sabit slot tanımları.
-/// Oran bazlı tutulduğu için farklı ekran boyutlarında daha stabil çalışır.
+/// İlk sürüm için oran bazlı sabit slot tanımları.
+/// Amaç: farklı ekran boyutlarında tutarlı davranmak ve
+/// kıyafetleri avatar üzerinde daha doğal bölgelere yerleştirmek.
 class AvatarSlots {
   static const AvatarSlot upperBody = AvatarSlot(
     id: 'upper_body',
     centerX: 0.50,
-    centerY: 0.31,
-    widthRatio: 0.56,
-    heightRatio: 0.36,
+    centerY: 0.285,
+    widthRatio: 0.48,
+    heightRatio: 0.30,
     zIndex: 20,
   );
 
   static const AvatarSlot lowerBody = AvatarSlot(
     id: 'lower_body',
     centerX: 0.50,
-    centerY: 0.58,
-    widthRatio: 0.34,
-    heightRatio: 0.26,
+    centerY: 0.60,
+    widthRatio: 0.36,
+    heightRatio: 0.30,
     zIndex: 15,
   );
 
   static const AvatarSlot outerwear = AvatarSlot(
     id: 'outerwear',
     centerX: 0.50,
-    centerY: 0.38,
-    widthRatio: 0.42,
-    heightRatio: 0.48,
+    centerY: 0.36,
+    widthRatio: 0.46,
+    heightRatio: 0.44,
     zIndex: 25,
   );
+
   static const AvatarSlot feet = AvatarSlot(
     id: 'feet',
     centerX: 0.50,
-    centerY: 0.88,
-    widthRatio: 0.30,
-    heightRatio: 0.12,
+    centerY: 0.89,
+    widthRatio: 0.28,
+    heightRatio: 0.10,
     zIndex: 10,
   );
 
