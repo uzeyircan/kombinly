@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/profile_gender.dart';
+import '../../../ai_try_on/presentation/pages/ai_try_on_page.dart';
 import '../../../wardrobe/presentation/pages/wardrobe_page.dart';
 import '../../../outfit/presentation/pages/try_on_studio_page.dart';
 import '../../../outfit/presentation/pages/today_outfit_page.dart';
@@ -247,6 +248,20 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 32),
+            _HomeActionCard(
+              title: 'AI Try-On',
+              subtitle: 'Generate realistic mannequin try-on images',
+              icon: Icons.auto_fix_high_outlined,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AiTryOnPage(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             _HomeActionCard(
               title: 'My Wardrobe',
               subtitle: 'Add and manage your clothes',
