@@ -26,6 +26,7 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
   late double offsetX;
   late double offsetY;
   late double rotation;
+  AvatarViewMode _viewMode = AvatarViewMode.front;
 
   bool isSaving = false;
   bool _isDragging = false;
@@ -305,8 +306,37 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    Center(
+                      child: SegmentedButton<AvatarViewMode>(
+                        segments: const [
+                          ButtonSegment(
+                            value: AvatarViewMode.front,
+                            label: Text('Front'),
+                            icon: Icon(Icons.person_outline),
+                          ),
+                          ButtonSegment(
+                            value: AvatarViewMode.quarterLeft,
+                            label: Text('Left 3/4'),
+                            icon: Icon(Icons.turn_left),
+                          ),
+                          ButtonSegment(
+                            value: AvatarViewMode.quarterRight,
+                            label: Text('Right 3/4'),
+                            icon: Icon(Icons.turn_right),
+                          ),
+                        ],
+                        selected: {_viewMode},
+                        onSelectionChanged: (selection) {
+                          setState(() {
+                            _viewMode = selection.first;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     AvatarCanvas(
                       items: [previewItem],
+                      viewMode: _viewMode,
                       showSlotOverlay: _isDragging || _activeSnapSlotId != null,
                       highlightedSlotId: _activeSnapSlotId,
                       onCanvasSizeChanged: (size) {

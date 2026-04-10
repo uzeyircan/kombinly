@@ -88,7 +88,6 @@ class ReprocessClothingService {
     await supabase
         .from('clothes')
         .update({
-          'image_url': processedImageUrl,
           'processed_image_url': processedImageUrl,
           'aspect_ratio': aspectRatio,
           'fit_profile': fitProfile,

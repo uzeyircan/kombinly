@@ -157,8 +157,6 @@ class _AddClothingPageState extends State<AddClothingPage> {
     try {
       String? originalImageUrl;
       String? processedImageUrl;
-      String? finalImageUrl;
-
       if (_selectedImageFile != null) {
         originalImageUrl = await _uploadOriginalImage(user.id);
 
@@ -168,15 +166,16 @@ class _AddClothingPageState extends State<AddClothingPage> {
             userId: user.id,
             pngBytes: processedBytes,
           );
-          finalImageUrl = processedImageUrl;
         }
       }
 
       double aspectRatio = 1.0;
 
-      if (finalImageUrl != null && finalImageUrl.isNotEmpty) {
+      if (processedImageUrl != null && processedImageUrl.isNotEmpty) {
         try {
-          aspectRatio = await garmentProcessor.detectAspectRatio(finalImageUrl);
+          aspectRatio = await garmentProcessor.detectAspectRatio(
+            processedImageUrl,
+          );
         } catch (_) {
           aspectRatio = 1.0;
         }
@@ -201,7 +200,7 @@ class _AddClothingPageState extends State<AddClothingPage> {
             'color': _selectedColor,
             'season': _selectedSeason,
             'occasion': _selectedOccasion,
-            'image_url': finalImageUrl,
+            'image_url': originalImageUrl,
             'processed_image_url': processedImageUrl,
             'crop_scale': smartPlacement.cropScale,
             'offset_x': smartPlacement.offsetX,
@@ -209,9 +208,11 @@ class _AddClothingPageState extends State<AddClothingPage> {
             'rotation': smartPlacement.rotation,
             'aspect_ratio': aspectRatio,
             'fit_profile': fitProfile,
-            'is_processed': finalImageUrl != null,
-            'needs_review': false,
-            'last_processed_at': DateTime.now().toIso8601String(),
+            'is_processed': processedImageUrl != null,
+            'needs_review': processedImageUrl == null,
+            'last_processed_at': processedImageUrl != null
+                ? DateTime.now().toIso8601String()
+                : null,
           })
           .select()
           .single();

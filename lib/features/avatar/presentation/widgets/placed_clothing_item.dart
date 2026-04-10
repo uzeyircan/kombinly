@@ -33,7 +33,7 @@ class PlacedClothingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = item.imageUrl;
+    final imageUrl = item.renderImageUrl;
     if (imageUrl == null || imageUrl.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -64,6 +64,8 @@ class PlacedClothingItem extends StatelessWidget {
         width: fit.width,
         height: fit.height,
         fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
     );
 
