@@ -1,15 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../wardrobe/domain/models/clothing_item.dart';
 import '../../domain/ai_try_on_defaults.dart';
 import '../../domain/models/ai_try_on_generation.dart';
 import '../../domain/services/ai_try_on_service.dart';
-
-enum GarmentSourceMode { wardrobe, upload }
 
 class AiTryOnPage extends StatefulWidget {
   const AiTryOnPage({super.key});
@@ -20,7 +15,6 @@ class AiTryOnPage extends StatefulWidget {
 
 class _AiTryOnPageState extends State<AiTryOnPage> {
   final _service = AiTryOnService(supabase: Supabase.instance.client);
-  final _imagePicker = ImagePicker();
   final _promptController = TextEditingController(
     text: AiTryOnDefaults.defaultPrompt,
   );
@@ -28,12 +22,40 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
   bool _isLoading = true;
   bool _isGenerating = false;
 
-  GarmentSourceMode _sourceMode = GarmentSourceMode.wardrobe;
   ClothingItem? _selectedWardrobeItem;
-  XFile? _uploadedGarmentImage;
 
   List<ClothingItem> _wardrobeItems = [];
   List<AiTryOnGeneration> _history = [];
+
+  List<AiTryOnGeneration> get _visibleHistory {
+    final visible = <AiTryOnGeneration>[];
+    var hasVisibleFailure = false;
+
+    for (final generation in _history) {
+      if (generation.isFailed) {
+        if (hasVisibleFailure) continue;
+        hasVisibleFailure = true;
+      }
+
+      visible.add(generation);
+    }
+
+    return visible;
+  }
+
+  String _friendlyErrorMessage(AiTryOnGeneration generation) {
+    final message = generation.errorMessage ?? '';
+    if (message.contains('429') || message.contains('quota')) {
+      return 'Quota limit reached. Check your Gemini billing or wait before trying again.';
+    }
+    if (message.contains('Invalid JWT')) {
+      return 'Authentication failed while calling the AI function.';
+    }
+    if (message.trim().isEmpty) {
+      return 'Generation failed. Please try again.';
+    }
+    return message;
+  }
 
   @override
   void initState() {
@@ -67,19 +89,6 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to load AI Try-On: $e')));
     }
-  }
-
-  Future<void> _pickGarmentUpload() async {
-    final picked = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 90,
-    );
-
-    if (picked == null) return;
-
-    setState(() {
-      _uploadedGarmentImage = picked;
-    });
   }
 
   Future<void> _chooseWardrobeItem() async {
@@ -148,17 +157,9 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
   }
 
   Future<void> _generate() async {
-    if (_sourceMode == GarmentSourceMode.wardrobe &&
-        _selectedWardrobeItem == null) {
+    if (_selectedWardrobeItem == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose a wardrobe item first')),
-      );
-      return;
-    }
-
-    if (_sourceMode == GarmentSourceMode.upload && _uploadedGarmentImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload a garment image first')),
       );
       return;
     }
@@ -176,12 +177,7 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
     try {
       final generation = await _service.createGeneration(
         prompt: prompt,
-        sourceClothingItem: _sourceMode == GarmentSourceMode.wardrobe
-            ? _selectedWardrobeItem
-            : null,
-        garmentUpload: _sourceMode == GarmentSourceMode.upload
-            ? _uploadedGarmentImage
-            : null,
+        sourceClothingItem: _selectedWardrobeItem,
       );
 
       final refreshedHistory = await _service.loadGenerations();
@@ -214,6 +210,8 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
 
   @override
   Widget build(BuildContext context) {
+    final visibleHistory = _visibleHistory;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Try-On'),
@@ -231,11 +229,11 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
           : RefreshIndicator(
               onRefresh: _loadData,
               child: ListView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
                 children: [
-                  const Text(
-                    'Create a realistic try-on image on the standard Kombinly mannequin using a wardrobe item or a new garment image.',
-                    style: TextStyle(fontSize: 16),
+                  _AiHeroCard(
+                    selectedItem: _selectedWardrobeItem,
+                    onPickItem: _chooseWardrobeItem,
                   ),
                   const SizedBox(height: 20),
                   _StaticInfoCard(
@@ -256,55 +254,19 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SegmentedButton<GarmentSourceMode>(
-                    segments: const [
-                      ButtonSegment(
-                        value: GarmentSourceMode.wardrobe,
-                        label: Text('Wardrobe'),
-                        icon: Icon(Icons.checkroom_outlined),
-                      ),
-                      ButtonSegment(
-                        value: GarmentSourceMode.upload,
-                        label: Text('Upload'),
-                        icon: Icon(Icons.upload_file_outlined),
-                      ),
-                    ],
-                    selected: {_sourceMode},
-                    onSelectionChanged: (selection) {
-                      setState(() {
-                        _sourceMode = selection.first;
-                      });
-                    },
+                  _PickerCard(
+                    title: 'Garment source',
+                    subtitle: _selectedWardrobeItem == null
+                        ? 'Choose a processed item from your wardrobe'
+                        : _selectedWardrobeItem!.title,
+                    onTap: _chooseWardrobeItem,
+                    preview: _selectedWardrobeItem?.renderImageUrl == null
+                        ? null
+                        : Image.network(
+                            _selectedWardrobeItem!.renderImageUrl!,
+                            fit: BoxFit.contain,
+                          ),
                   ),
-                  const SizedBox(height: 16),
-                  if (_sourceMode == GarmentSourceMode.wardrobe)
-                    _PickerCard(
-                      title: 'Garment source',
-                      subtitle: _selectedWardrobeItem == null
-                          ? 'Choose an item from your wardrobe'
-                          : _selectedWardrobeItem!.title,
-                      onTap: _chooseWardrobeItem,
-                      preview: _selectedWardrobeItem?.renderImageUrl == null
-                          ? null
-                          : Image.network(
-                              _selectedWardrobeItem!.renderImageUrl!,
-                              fit: BoxFit.contain,
-                            ),
-                    )
-                  else
-                    _PickerCard(
-                      title: 'Garment upload',
-                      subtitle: _uploadedGarmentImage == null
-                          ? 'Choose a standalone clothing image'
-                          : 'Tap to change uploaded garment image',
-                      onTap: _pickGarmentUpload,
-                      preview: _uploadedGarmentImage == null
-                          ? null
-                          : Image.file(
-                              File(_uploadedGarmentImage!.path),
-                              fit: BoxFit.cover,
-                            ),
-                    ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _promptController,
@@ -342,7 +304,7 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  if (_history.isEmpty)
+                  if (visibleHistory.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 40),
                       child: Text(
@@ -352,15 +314,88 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                       ),
                     )
                   else
-                    ..._history.map((generation) {
+                    ...visibleHistory.map((generation) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: _GenerationCard(generation: generation),
+                        child: _GenerationCard(
+                          generation: generation,
+                          errorMessage: _friendlyErrorMessage(generation),
+                        ),
                       );
                     }),
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _AiHeroCard extends StatelessWidget {
+  final ClothingItem? selectedItem;
+  final VoidCallback onPickItem;
+
+  const _AiHeroCard({
+    required this.selectedItem,
+    required this.onPickItem,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2F2A25), Color(0xFF9C583C), Color(0xFFE7B86F)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: Colors.white.withValues(alpha: 0.16),
+            ),
+            child: const Text(
+              'AI-powered preview',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          const Text(
+            'Generate a realistic try-on image',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.8,
+              height: 1.04,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Pick one piece from your wardrobe. Kombinly uses the shared mannequin and creates a clean visual preview.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.84),
+              fontSize: 16,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 22),
+          FilledButton.tonalIcon(
+            onPressed: onPickItem,
+            icon: const Icon(Icons.checkroom_outlined),
+            label: Text(selectedItem == null ? 'Choose garment' : 'Change garment'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -477,8 +512,12 @@ class _StaticInfoCard extends StatelessWidget {
 
 class _GenerationCard extends StatelessWidget {
   final AiTryOnGeneration generation;
+  final String errorMessage;
 
-  const _GenerationCard({required this.generation});
+  const _GenerationCard({
+    required this.generation,
+    required this.errorMessage,
+  });
 
   Color _statusColor(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -512,6 +551,9 @@ class _GenerationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final previewUrl = generation.resultImageUrl ?? generation.mannequinImageUrl;
+    final imageFit = generation.resultImageUrl != null
+        ? BoxFit.contain
+        : BoxFit.contain;
 
     return Container(
       decoration: BoxDecoration(
@@ -525,13 +567,13 @@ class _GenerationCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: AspectRatio(
-                aspectRatio: 1,
+              child: SizedBox(
+                height: 220,
                 child: Container(
                   color: Theme.of(context).colorScheme.surfaceContainer,
                   child: Image.network(
                     previewUrl,
-                    fit: BoxFit.cover,
+                    fit: imageFit,
                     errorBuilder: (_, _, _) => const Center(
                       child: Icon(Icons.broken_image_outlined, size: 42),
                     ),
@@ -574,10 +616,21 @@ class _GenerationCard extends StatelessWidget {
             if (generation.errorMessage != null &&
                 generation.errorMessage!.trim().isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(
-                generation.errorMessage!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Theme.of(context).colorScheme.errorContainer
+                      .withValues(alpha: 0.55),
+                ),
+                child: Text(
+                  errorMessage,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    height: 1.35,
+                  ),
                 ),
               ),
             ],

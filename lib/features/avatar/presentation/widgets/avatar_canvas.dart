@@ -29,14 +29,14 @@ class AvatarCanvas extends StatelessWidget {
     this.itemWrapperBuilder,
   });
 
-  double _rotationForViewMode() {
+  double _horizontalShiftForViewMode() {
     switch (viewMode) {
       case AvatarViewMode.front:
         return 0.0;
       case AvatarViewMode.quarterLeft:
-        return -0.32;
+        return -10.0;
       case AvatarViewMode.quarterRight:
-        return 0.32;
+        return 10.0;
     }
   }
 
@@ -66,7 +66,7 @@ class AvatarCanvas extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
-          final rotationY = _rotationForViewMode();
+          final horizontalShift = _horizontalShiftForViewMode();
 
           if (onCanvasSizeChanged != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -96,11 +96,8 @@ class AvatarCanvas extends StatelessWidget {
                   ),
                 ),
               ),
-              Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.0014)
-                  ..rotateY(rotationY),
+              Transform.translate(
+                offset: Offset(horizontalShift, 0),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [

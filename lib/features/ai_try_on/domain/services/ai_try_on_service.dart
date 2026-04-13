@@ -27,11 +27,19 @@ class AiTryOnService {
         .from('clothes')
         .select()
         .eq('user_id', user.id)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .timeout(const Duration(seconds: 12));
 
-    return (data as List)
-        .map((item) => ClothingItem.fromMap(item as Map<String, dynamic>))
-        .toList();
+    final items = <ClothingItem>[];
+    for (final item in data as List) {
+      try {
+        items.add(ClothingItem.fromMap(item as Map<String, dynamic>));
+      } catch (_) {
+        // Old rows can be partially missing after schema experiments.
+      }
+    }
+
+    return items;
   }
 
   Future<List<AiTryOnGeneration>> loadGenerations() async {
@@ -47,9 +55,7 @@ class AiTryOnService {
         .order('created_at', ascending: false);
 
     return (data as List)
-        .map(
-          (item) => AiTryOnGeneration.fromMap(item as Map<String, dynamic>),
-        )
+        .map((item) => AiTryOnGeneration.fromMap(item as Map<String, dynamic>))
         .toList();
   }
 
@@ -84,7 +90,8 @@ class AiTryOnService {
       );
     }
 
-    final garmentImageUrl = sourceClothingItem?.renderImageUrl ??
+    final garmentImageUrl =
+        sourceClothingItem?.renderImageUrl ??
         await _uploadFile(
           userId: user.id,
           folder: 'garment',
@@ -108,8 +115,14 @@ class AiTryOnService {
     final generation = AiTryOnGeneration.fromMap(inserted);
 
     try {
+      final accessToken = supabase.auth.currentSession?.accessToken;
+
       await supabase.functions.invoke(
         _functionName,
+        headers: {
+          if (accessToken != null && accessToken.isNotEmpty)
+            'Authorization': 'Bearer $accessToken',
+        },
         body: {
           'generationId': generation.id,
           'mannequinImageUrl': mannequinImageUrl,
@@ -120,10 +133,7 @@ class AiTryOnService {
     } catch (e) {
       await supabase
           .from(_generationTable)
-          .update({
-            'status': 'failed',
-            'error_message': e.toString(),
-          })
+          .update({'status': 'failed', 'error_message': e.toString()})
           .eq('id', generation.id);
     }
 
@@ -140,14 +150,16 @@ class AiTryOnService {
         '${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(999999)}.$extension';
     final path = '$userId/$folder/$fileName';
 
-    await supabase.storage.from(_inputBucket).upload(
-      path,
-      file,
-      fileOptions: FileOptions(
-        upsert: true,
-        contentType: _contentTypeForExtension(extension),
-      ),
-    );
+    await supabase.storage
+        .from(_inputBucket)
+        .upload(
+          path,
+          file,
+          fileOptions: FileOptions(
+            upsert: true,
+            contentType: _contentTypeForExtension(extension),
+          ),
+        );
 
     return supabase.storage.from(_inputBucket).getPublicUrl(path);
   }

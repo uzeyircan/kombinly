@@ -24,6 +24,7 @@ class _WardrobePageState extends State<WardrobePage> {
 
   List<ClothingItem> _items = [];
   bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -84,6 +85,7 @@ class _WardrobePageState extends State<WardrobePage> {
       setState(() {
         _items = [];
         _isLoading = false;
+        _loadError = null;
       });
       return;
     }
@@ -93,22 +95,42 @@ class _WardrobePageState extends State<WardrobePage> {
           .from('clothes')
           .select()
           .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 12));
 
-      final items = (data as List)
-          .map((item) => ClothingItem.fromMap(item as Map<String, dynamic>))
-          .toList();
+      final items = <ClothingItem>[];
+      var skippedItems = 0;
+
+      for (final item in data as List) {
+        try {
+          items.add(ClothingItem.fromMap(item as Map<String, dynamic>));
+        } catch (_) {
+          skippedItems++;
+        }
+      }
 
       if (!mounted) return;
       setState(() {
         _items = items;
         _isLoading = false;
+        _loadError = null;
       });
+
+      if (skippedItems > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '$skippedItems wardrobe item could not be loaded because its data is incomplete.',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _items = [];
         _isLoading = false;
+        _loadError = 'Failed to load wardrobe. Pull to refresh or try again.';
       });
 
       ScaffoldMessenger.of(
@@ -226,6 +248,32 @@ class _WardrobePageState extends State<WardrobePage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+          ? RefreshIndicator(
+              onRefresh: _loadItems,
+              child: ListView(
+                children: [
+                  const SizedBox(height: 140),
+                  const Center(
+                    child: Text(
+                      'Wardrobe could not load.',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
+            )
           : _items.isEmpty
           ? RefreshIndicator(
               onRefresh: _loadItems,

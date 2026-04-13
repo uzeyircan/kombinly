@@ -162,31 +162,17 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
           ? RefreshIndicator(
               onRefresh: _loadSavedOutfits,
               child: ListView(
+                padding: const EdgeInsets.all(24),
                 children: const [
-                  SizedBox(height: 140),
-                  Center(
-                    child: Text(
-                      'No saved outfits yet.',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      'Generate and save a few outfits first.',
-                      style: TextStyle(fontSize: 15),
-                    ),
-                  ),
+                  SizedBox(height: 60),
+                  _SavedOutfitsEmptyState(),
                 ],
               ),
             )
           : RefreshIndicator(
               onRefresh: _loadSavedOutfits,
               child: ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
                 itemCount: _outfits.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
@@ -212,6 +198,53 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
                 },
               ),
             ),
+    );
+  }
+}
+
+class _SavedOutfitsEmptyState extends StatelessWidget {
+  const _SavedOutfitsEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        color: Colors.white.withValues(alpha: 0.78),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: Icon(
+              Icons.bookmark_outline,
+              size: 38,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'No saved outfits yet',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Save looks from Today’s Outfit or Try On Studio and they will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

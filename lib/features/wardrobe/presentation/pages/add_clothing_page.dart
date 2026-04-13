@@ -213,6 +213,13 @@ class _AddClothingPageState extends State<AddClothingPage> {
             'last_processed_at': processedImageUrl != null
                 ? DateTime.now().toIso8601String()
                 : null,
+            'motion_type': 'none',
+            'motion_intensity': 0.0,
+            'motion_speed': 0.0,
+            'is_live_supported': false,
+            'mannequin_gender': null,
+            'garment_template': null,
+            'preview_mode': 'static',
           })
           .select()
           .single();

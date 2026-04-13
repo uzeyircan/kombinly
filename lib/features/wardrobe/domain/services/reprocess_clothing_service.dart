@@ -98,6 +98,7 @@ class ReprocessClothingService {
           'is_processed': true,
           'needs_review': false,
           'last_processed_at': DateTime.now().toIso8601String(),
+          'preview_mode': 'static',
         })
         .eq('id', itemId);
   }

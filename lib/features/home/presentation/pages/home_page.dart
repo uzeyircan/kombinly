@@ -233,93 +233,252 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
         children: [
-          Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Welcome, ${ProfileGender.label(_gender)} user',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          _HomeHeroCard(
+            gender: ProfileGender.label(_gender),
+            onAiReady: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiTryOnPage()),
+              );
+            },
+            onStudio: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TryOnStudioPage()),
+              );
+            },
+            onSaved: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SavedOutfitsPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 22),
+          Text(
+            'Start here',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Your wardrobe-based outfit assistant is ready.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 32),
-            _HomeActionCard(
-              title: 'AI Try-On',
-              subtitle: 'Generate realistic mannequin try-on images',
-              icon: Icons.auto_fix_high_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AiTryOnPage(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _HomeActionCard(
-              title: 'My Wardrobe',
-              subtitle: 'Add and manage your clothes',
-              icon: Icons.checkroom_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const WardrobePage(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _HomeActionCard(
-              title: 'Try On Studio',
-              subtitle: 'Build a look manually on the mannequin',
-              icon: Icons.view_in_ar_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TryOnStudioPage(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _HomeActionCard(
-              title: 'Today’s Outfit',
-              subtitle: 'Get outfit suggestions for today',
-              icon: Icons.auto_awesome_outlined,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TodayOutfitPage(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _HomeActionCard(
-              title: 'Saved Outfits',
-              subtitle: 'View your saved outfit history',
-              icon: Icons.bookmark_outline,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SavedOutfitsPage(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+          _HomeActionCard(
+            title: 'AI Try-On',
+            subtitle: 'Turn wardrobe pieces into realistic mannequin looks',
+            icon: Icons.auto_fix_high_outlined,
+            accentColor: const Color(0xFFB85C38),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiTryOnPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          _HomeActionCard(
+            title: 'My Wardrobe',
+            subtitle: 'Upload, process, and organize your clothes',
+            icon: Icons.checkroom_outlined,
+            accentColor: const Color(0xFF617B58),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const WardrobePage()),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          _HomeActionCard(
+            title: 'Try On Studio',
+            subtitle: 'Build manual outfit previews on the mannequin',
+            icon: Icons.view_in_ar_outlined,
+            accentColor: const Color(0xFF3F6C7B),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TryOnStudioPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          _HomeActionCard(
+            title: 'Today’s Outfit',
+            subtitle: 'Generate outfit ideas from your wardrobe',
+            icon: Icons.auto_awesome_outlined,
+            accentColor: const Color(0xFF8B6F3D),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TodayOutfitPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          _HomeActionCard(
+            title: 'Saved Outfits',
+            subtitle: 'Revisit the looks you liked most',
+            icon: Icons.bookmark_outline,
+            accentColor: const Color(0xFF704F62),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SavedOutfitsPage()),
+              );
+            },
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _HomeHeroCard extends StatelessWidget {
+  final String gender;
+  final VoidCallback onAiReady;
+  final VoidCallback onStudio;
+  final VoidCallback onSaved;
+
+  const _HomeHeroCard({
+    required this.gender,
+    required this.onAiReady,
+    required this.onStudio,
+    required this.onSaved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2F2A25), Color(0xFF8F4D3F), Color(0xFFE9B872)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            child: Text(
+              '$gender wardrobe profile',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          const Text(
+            'Your hybrid fashion studio',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1.0,
+              height: 1.02,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Organize your wardrobe, preview outfits, and create AI-powered try-on images from the pieces you already own.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.82),
+              fontSize: 16,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              _HeroMetric(
+                label: 'AI ready',
+                icon: Icons.auto_fix_high,
+                onTap: onAiReady,
+              ),
+              const SizedBox(width: 10),
+              _HeroMetric(
+                label: 'Studio',
+                icon: Icons.view_in_ar,
+                onTap: onStudio,
+              ),
+              const SizedBox(width: 10),
+              _HeroMetric(
+                label: 'Saved',
+                icon: Icons.bookmark,
+                onTap: onSaved,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroMetric extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeroMetric({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: Colors.white),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -330,12 +489,14 @@ class _HomeActionCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
+  final Color accentColor;
 
   const _HomeActionCard({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.onTap,
+    required this.accentColor,
   });
 
   @override
@@ -345,36 +506,58 @@ class _HomeActionCard extends StatelessWidget {
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(26),
+          color: Colors.white.withValues(alpha: 0.74),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant
+                .withValues(alpha: 0.52),
+          ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SizedBox(
-            height: 112,
-            child: Row(
-              children: [
-                Icon(icon, size: 42),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(subtitle, style: const TextStyle(fontSize: 15)),
-                    ],
-                  ),
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ],
-            ),
+                child: Icon(icon, size: 30, color: accentColor),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        height: 1.25,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
         ),
       ),

@@ -56,10 +56,10 @@ class ClothingItem {
   factory ClothingItem.fromMap(Map<String, dynamic> map) {
     return ClothingItem(
       id: map['id'] as String,
-      title: map['title'] as String,
-      category: map['category'] as String,
-      color: map['color'] as String,
-      season: map['season'] as String,
+      title: (map['title'] as String?) ?? 'Untitled item',
+      category: (map['category'] as String?) ?? 'Top',
+      color: (map['color'] as String?) ?? 'Unknown',
+      season: (map['season'] as String?) ?? 'All Seasons',
       occasion: (map['occasion'] as String?) ?? 'Casual',
       imageUrl: map['image_url'] as String?,
       processedImageUrl: map['processed_image_url'] as String?,

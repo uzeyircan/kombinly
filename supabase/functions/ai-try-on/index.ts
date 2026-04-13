@@ -160,7 +160,7 @@ async function callGeminiEditAPI(input: GenerationRequest) {
 
   const responseText = await response.text();
   if (!response.ok) {
-    throw new Error(`Gemini request failed (${response.status}): ${responseText}`);
+    throw new Error(parseGeminiErrorMessage(response.status, responseText));
   }
 
   const payload = JSON.parse(responseText);
@@ -181,6 +181,31 @@ async function callGeminiEditAPI(input: GenerationRequest) {
     mimeType: inlineData.mimeType ?? "image/png",
     bytes: base64ToBytes(inlineData.data),
   };
+}
+
+function parseGeminiErrorMessage(status: number, responseText: string): string {
+  let message = responseText;
+
+  try {
+    const payload = JSON.parse(responseText);
+    if (typeof payload?.error?.message === "string") {
+      message = payload.error.message;
+    }
+  } catch (_) {
+    // Keep the raw response text when Gemini returns a non-JSON error body.
+  }
+
+  const normalized = message.toLowerCase();
+  if (
+    status === 429 ||
+    normalized.includes("resource_exhausted") ||
+    normalized.includes("quota exceeded") ||
+    normalized.includes("generate_content_free_tier")
+  ) {
+    return "Gemini image generation quota is exhausted. Try again later or update the Gemini API billing/quota settings.";
+  }
+
+  return `Gemini request failed (${status}): ${message}`;
 }
 
 function fileExtensionForMimeType(mimeType: string): string {

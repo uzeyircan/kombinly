@@ -262,14 +262,11 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Build a look manually and preview it on the mannequin.',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  const _StudioHeroCard(),
                   const SizedBox(height: 20),
                   Center(
                     child: SegmentedButton<TryOnRenderMode>(
@@ -502,12 +499,29 @@ class _StudioSlotTile extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withValues(alpha: 0.74),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant
+                .withValues(alpha: 0.50),
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 28),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Theme.of(context).colorScheme.primary
+                    .withValues(alpha: 0.12),
+              ),
+              child: Icon(
+                icon,
+                size: 26,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -528,6 +542,64 @@ class _StudioSlotTile extends StatelessWidget {
             const Icon(Icons.chevron_right),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StudioHeroCard extends StatelessWidget {
+  const _StudioHeroCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF26343A), Color(0xFF3F6C7B), Color(0xFFC2A46D)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: Colors.white.withValues(alpha: 0.16),
+            ),
+            child: const Text(
+              'Manual studio',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          const Text(
+            'Build looks layer by layer',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.8,
+              height: 1.04,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Pick a top, bottom, and shoes from your wardrobe. Preview the outfit before saving it.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.84),
+              fontSize: 16,
+              height: 1.35,
+            ),
+          ),
+        ],
       ),
     );
   }
