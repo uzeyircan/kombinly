@@ -60,11 +60,17 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
           .from('clothes')
           .select()
           .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 12));
 
-      final items = (data as List)
-          .map((item) => ClothingItem.fromMap(item as Map<String, dynamic>))
-          .toList();
+      final items = <ClothingItem>[];
+      for (final item in data as List) {
+        try {
+          items.add(ClothingItem.fromMap(item as Map<String, dynamic>));
+        } catch (_) {
+          // Keep the studio usable even if an older wardrobe row is incomplete.
+        }
+      }
 
       if (!mounted) return;
       setState(() {
@@ -76,9 +82,9 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load studio items: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load studio items: $e')),
+      );
     }
   }
 
@@ -133,9 +139,9 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
       ).showSnackBar(const SnackBar(content: Text('Studio outfit saved')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to save studio outfit: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save studio outfit: $e')),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -160,6 +166,10 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
     final picked = await showModalBottomSheet<ClothingItem?>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) {
         return SafeArea(
           child: SizedBox(
@@ -216,10 +226,9 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                                       : Image.network(
                                           imageUrl,
                                           fit: BoxFit.contain,
-                                          errorBuilder: (_, _, _) =>
-                                              const Icon(
-                                                Icons.broken_image_outlined,
-                                              ),
+                                          errorBuilder: (_, _, _) => const Icon(
+                                            Icons.broken_image_outlined,
+                                          ),
                                         ),
                                 ),
                               ),
@@ -248,6 +257,7 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F1),
       appBar: AppBar(
         title: const Text('Try On Studio'),
         centerTitle: true,
@@ -262,7 +272,7 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -453,7 +463,8 @@ class _StageSlider extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Colors.white.withValues(alpha: 0.82),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -500,11 +511,19 @@ class _StudioSlotTile extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          color: Colors.white.withValues(alpha: 0.74),
+          color: Colors.white.withValues(alpha: 0.86),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant
-                .withValues(alpha: 0.50),
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.50),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.035),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -513,8 +532,9 @@ class _StudioSlotTile extends StatelessWidget {
               height: 50,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                color: Theme.of(context).colorScheme.primary
-                    .withValues(alpha: 0.12),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.12),
               ),
               child: Icon(
                 icon,

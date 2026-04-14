@@ -219,7 +219,6 @@ class _AddClothingPageState extends State<AddClothingPage> {
             'is_live_supported': false,
             'mannequin_gender': null,
             'garment_template': null,
-            'preview_mode': 'static',
           })
           .select()
           .single();
@@ -244,11 +243,12 @@ class _AddClothingPageState extends State<AddClothingPage> {
     if (_selectedImageFile == null) {
       return InkWell(
         onTap: _pickImage,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(28),
         child: Ink(
-          height: 180,
+          height: 190,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            color: Colors.white.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
@@ -257,9 +257,14 @@ class _AddClothingPageState extends State<AddClothingPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_photo_alternate_outlined, size: 42),
-                SizedBox(height: 8),
-                Text('Select clothing image'),
+                Icon(Icons.add_photo_alternate_outlined, size: 44),
+                SizedBox(height: 10),
+                Text(
+                  'Select clothing image',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 4),
+                Text('A clean product photo works best'),
               ],
             ),
           ),
@@ -271,7 +276,7 @@ class _AddClothingPageState extends State<AddClothingPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(28),
           child: Image.file(
             _selectedImageFile!,
             height: 220,
@@ -290,114 +295,136 @@ class _AddClothingPageState extends State<AddClothingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F1),
       appBar: AppBar(title: const Text('Add Clothing'), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              _buildImagePreview(),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Clothing Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a clothing title';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(),
-                ),
-                items: categories
-                    .map(
-                      (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedColor,
-                decoration: const InputDecoration(
-                  labelText: 'Color',
-                  border: OutlineInputBorder(),
-                ),
-                items: colors
-                    .map(
-                      (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedColor = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSeason,
-                decoration: const InputDecoration(
-                  labelText: 'Season',
-                  border: OutlineInputBorder(),
-                ),
-                items: seasons
-                    .map(
-                      (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedSeason = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedOccasion,
-                decoration: const InputDecoration(
-                  labelText: 'Occasion',
-                  border: OutlineInputBorder(),
-                ),
-                items: occasions
-                    .map(
-                      (e) => DropdownMenuItem<String>(value: e, child: Text(e)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedOccasion = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _saveItem,
-                  child: Text(_isLoading ? 'Saving...' : 'Save'),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          children: [
+            _buildImagePreview(),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.86),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
                 ),
               ),
-            ],
-          ),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Clothing Title',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a clothing title';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: categories
+                        .map(
+                          (e) => DropdownMenuItem<String>(
+                            value: e,
+                            child: Text(e),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedColor,
+                    decoration: const InputDecoration(
+                      labelText: 'Color',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: colors
+                        .map(
+                          (e) => DropdownMenuItem<String>(
+                            value: e,
+                            child: Text(e),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedColor = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedSeason,
+                    decoration: const InputDecoration(
+                      labelText: 'Season',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: seasons
+                        .map(
+                          (e) => DropdownMenuItem<String>(
+                            value: e,
+                            child: Text(e),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedSeason = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedOccasion,
+                    decoration: const InputDecoration(
+                      labelText: 'Occasion',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: occasions
+                        .map(
+                          (e) => DropdownMenuItem<String>(
+                            value: e,
+                            child: Text(e),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedOccasion = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            FilledButton(
+              onPressed: _isLoading ? null : _saveItem,
+              child: Text(_isLoading ? 'Saving...' : 'Save'),
+            ),
+          ],
         ),
       ),
     );

@@ -48,20 +48,27 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
           .from('outfits')
           .select()
           .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 12));
 
       final clothesData = await supabase
           .from('clothes')
           .select()
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .timeout(const Duration(seconds: 12));
 
       final outfits = (outfitsData as List)
           .map((e) => SavedOutfit.fromMap(e as Map<String, dynamic>))
           .toList();
 
-      final clothes = (clothesData as List)
-          .map((e) => ClothingItem.fromMap(e as Map<String, dynamic>))
-          .toList();
+      final clothes = <ClothingItem>[];
+      for (final item in clothesData as List) {
+        try {
+          clothes.add(ClothingItem.fromMap(item as Map<String, dynamic>));
+        } catch (_) {
+          // Saved outfits can still render even if an old clothing row is partial.
+        }
+      }
 
       final clothesById = <String, ClothingItem>{
         for (final item in clothes) item.id: item,
@@ -145,6 +152,7 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F1),
       appBar: AppBar(
         title: const Text('Saved Outfits'),
         centerTitle: true,
@@ -172,7 +180,7 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
           : RefreshIndicator(
               onRefresh: _loadSavedOutfits,
               child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 32),
                 itemCount: _outfits.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
@@ -220,7 +228,9 @@ class _SavedOutfitsEmptyState extends StatelessWidget {
             width: 76,
             height: 76,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(26),
             ),
             child: Icon(
@@ -276,19 +286,20 @@ class _SavedOutfitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AvatarCanvas(
             items: previewItems,
-            height: 420,
+            height: 390,
             padding: const EdgeInsets.all(12),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

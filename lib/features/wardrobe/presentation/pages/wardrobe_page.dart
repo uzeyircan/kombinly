@@ -234,7 +234,10 @@ class _WardrobePageState extends State<WardrobePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F1),
       appBar: AppBar(
         title: const Text('My Wardrobe'),
         centerTitle: true,
@@ -252,24 +255,13 @@ class _WardrobePageState extends State<WardrobePage> {
           ? RefreshIndicator(
               onRefresh: _loadItems,
               child: ListView(
+                padding: const EdgeInsets.all(24),
                 children: [
-                  const SizedBox(height: 140),
-                  const Center(
-                    child: Text(
-                      'Wardrobe could not load.',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      _loadError!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 15),
-                    ),
+                  const SizedBox(height: 96),
+                  _WardrobeNoticeCard(
+                    icon: Icons.cloud_off_outlined,
+                    title: 'Wardrobe could not load.',
+                    subtitle: _loadError!,
                   ),
                 ],
               ),
@@ -278,23 +270,13 @@ class _WardrobePageState extends State<WardrobePage> {
           ? RefreshIndicator(
               onRefresh: _loadItems,
               child: ListView(
+                padding: const EdgeInsets.all(24),
                 children: const [
-                  SizedBox(height: 140),
-                  Center(
-                    child: Text(
-                      'No clothes added yet.',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      'Tap + to add your first item.',
-                      style: TextStyle(fontSize: 15),
-                    ),
+                  SizedBox(height: 96),
+                  _WardrobeNoticeCard(
+                    icon: Icons.checkroom_outlined,
+                    title: 'No clothes added yet.',
+                    subtitle: 'Tap + to add your first item.',
                   ),
                 ],
               ),
@@ -302,13 +284,13 @@ class _WardrobePageState extends State<WardrobePage> {
           : RefreshIndicator(
               onRefresh: _loadItems,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 96),
                 child: GridView.builder(
                   itemCount: _items.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
                     childAspectRatio: 0.78,
                   ),
                   itemBuilder: (context, index) {
@@ -329,7 +311,64 @@ class _WardrobePageState extends State<WardrobePage> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _goToAddPage,
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _WardrobeNoticeCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _WardrobeNoticeCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Icon(icon, size: 34, color: colorScheme.primary),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 15,
+              height: 1.35,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -363,6 +402,7 @@ class _WardrobeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = item.renderImageUrl;
     final statusText = _statusLabel(item);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
       color: Colors.transparent,
@@ -371,8 +411,11 @@ class _WardrobeItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: Ink(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(22),
+            color: Colors.white.withValues(alpha: 0.86),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -386,8 +429,8 @@ class _WardrobeItemCard extends StatelessWidget {
                           top: Radius.circular(22),
                         ),
                         child: Container(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
-                          padding: const EdgeInsets.all(10),
+                          color: const Color(0xFFF7EAE0),
+                          padding: const EdgeInsets.all(12),
                           child: imageUrl == null || imageUrl.isEmpty
                               ? const Center(
                                   child: Icon(
@@ -407,6 +450,24 @@ class _WardrobeItemCard extends StatelessWidget {
                                     );
                                   },
                                 ),
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(22),
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.06),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.05),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -439,7 +500,7 @@ class _WardrobeItemCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                padding: const EdgeInsets.fromLTRB(13, 11, 13, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -448,38 +509,47 @@ class _WardrobeItemCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      '${item.category} • ${item.color}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    _MetaLine(
+                      icon: Icons.category_outlined,
+                      text: '${item.category} • ${item.color}',
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${item.season} • ${item.occasion}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    const SizedBox(height: 3),
+                    _MetaLine(
+                      icon: Icons.event_available_outlined,
+                      text: '${item.season} • ${item.occasion}',
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         if (onRetry != null)
                           Expanded(
-                            child: OutlinedButton(
-                              onPressed: isRetrying ? null : onRetry,
-                              child: Text(isRetrying ? 'Retrying...' : 'Retry'),
+                            child: SizedBox(
+                              height: 36,
+                              child: OutlinedButton(
+                                onPressed: isRetrying ? null : onRetry,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: colorScheme.primary,
+                                  side: BorderSide(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Text(
+                                  isRetrying ? 'Retrying...' : 'Retry',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
                           ),
                         if (onRetry != null) const SizedBox(width: 8),
@@ -488,6 +558,14 @@ class _WardrobeItemCard extends StatelessWidget {
                           icon: const Icon(Icons.delete_outline),
                           tooltip: 'Delete',
                           visualDensity: VisualDensity.compact,
+                          style: IconButton.styleFrom(
+                            backgroundColor: colorScheme.errorContainer
+                                .withValues(alpha: 0.55),
+                            foregroundColor: colorScheme.onErrorContainer,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -498,6 +576,33 @@ class _WardrobeItemCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MetaLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MetaLine({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Row(
+      children: [
+        Icon(icon, size: 13, color: color.withValues(alpha: 0.82)),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.4, color: color, height: 1.15),
+          ),
+        ),
+      ],
     );
   }
 }
