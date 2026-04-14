@@ -52,7 +52,8 @@ class AiTryOnService {
         .from(_generationTable)
         .select()
         .eq('user_id', user.id)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .timeout(const Duration(seconds: 12));
 
     return (data as List)
         .map((item) => AiTryOnGeneration.fromMap(item as Map<String, dynamic>))
@@ -64,7 +65,8 @@ class AiTryOnService {
         .from(_generationTable)
         .select()
         .eq('id', id)
-        .single();
+        .single()
+        .timeout(const Duration(seconds: 12));
 
     return AiTryOnGeneration.fromMap(data);
   }

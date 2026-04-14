@@ -44,17 +44,19 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
   }
 
   String _friendlyErrorMessage(AiTryOnGeneration generation) {
-    final message = generation.errorMessage ?? '';
-    if (message.contains('429') || message.contains('quota')) {
-      return 'Quota limit reached. Check your Gemini billing or wait before trying again.';
+    final message = (generation.errorMessage ?? '').toLowerCase();
+    if (message.contains('429') ||
+        message.contains('quota') ||
+        message.contains('rate-limit')) {
+      return 'AI generation is temporarily unavailable. Please try again later.';
     }
-    if (message.contains('Invalid JWT')) {
-      return 'Authentication failed while calling the AI function.';
+    if (message.contains('jwt') || message.contains('unauthorized')) {
+      return 'Your session needs to be refreshed before using AI Try-On again.';
     }
     if (message.trim().isEmpty) {
-      return 'Generation failed. Please try again.';
+      return 'AI generation failed. Please try again.';
     }
-    return message;
+    return 'AI generation failed. Please try again later.';
   }
 
   @override
@@ -95,6 +97,10 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
     final selected = await showModalBottomSheet<ClothingItem>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) {
         return SafeArea(
           child: SizedBox(
@@ -106,10 +112,7 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                   padding: EdgeInsets.fromLTRB(20, 20, 20, 12),
                   child: Text(
                     'Choose a wardrobe item',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
@@ -190,7 +193,7 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
       final message = generation.isCompleted
           ? 'AI Try-On image generated'
           : generation.isFailed
-          ? 'Generation failed. Check the latest card for details.'
+          ? _friendlyErrorMessage(generation)
           : 'Generation submitted. Refresh to check updated status.';
 
       ScaffoldMessenger.of(
@@ -213,6 +216,7 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
     final visibleHistory = _visibleHistory;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F1),
       appBar: AppBar(
         title: const Text('AI Try-On'),
         centerTitle: true,
@@ -254,6 +258,8 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  const _AiUsageNoticeCard(),
+                  const SizedBox(height: 16),
                   _PickerCard(
                     title: 'Garment source',
                     subtitle: _selectedWardrobeItem == null
@@ -279,7 +285,9 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: _isGenerating ? null : _generate,
+                    onPressed: _isGenerating || _selectedWardrobeItem == null
+                        ? null
+                        : _generate,
                     icon: const Icon(Icons.auto_awesome),
                     label: Text(
                       _isGenerating ? 'Generating...' : 'Generate AI Try-On',
@@ -305,14 +313,7 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
                   ),
                   const SizedBox(height: 8),
                   if (visibleHistory.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Text(
-                        'No AI try-on results yet.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    )
+                    const _AiEmptyState()
                   else
                     ...visibleHistory.map((generation) {
                       return Padding(
@@ -330,14 +331,100 @@ class _AiTryOnPageState extends State<AiTryOnPage> {
   }
 }
 
+class _AiUsageNoticeCard extends StatelessWidget {
+  const _AiUsageNoticeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              color: colorScheme.primary.withValues(alpha: 0.10),
+            ),
+            child: Icon(
+              Icons.auto_awesome_outlined,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'AI Try-On may be limited while Gemini quota is unavailable. Manual Studio stays free and instant.',
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiEmptyState extends StatelessWidget {
+  const _AiEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.image_search_outlined,
+              size: 38,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No AI try-on results yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Choose a wardrobe item and generate your first mannequin preview.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AiHeroCard extends StatelessWidget {
   final ClothingItem? selectedItem;
   final VoidCallback onPickItem;
 
-  const _AiHeroCard({
-    required this.selectedItem,
-    required this.onPickItem,
-  });
+  const _AiHeroCard({required this.selectedItem, required this.onPickItem});
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +479,9 @@ class _AiHeroCard extends StatelessWidget {
           FilledButton.tonalIcon(
             onPressed: onPickItem,
             icon: const Icon(Icons.checkroom_outlined),
-            label: Text(selectedItem == null ? 'Choose garment' : 'Change garment'),
+            label: Text(
+              selectedItem == null ? 'Choose garment' : 'Change garment',
+            ),
           ),
         ],
       ),
@@ -433,7 +522,8 @@ class _PickerCard extends StatelessWidget {
                   width: 92,
                   height: 92,
                   color: Theme.of(context).colorScheme.surfaceContainer,
-                  child: preview ??
+                  child:
+                      preview ??
                       const Icon(Icons.add_photo_alternate_outlined, size: 36),
                 ),
               ),
@@ -514,10 +604,7 @@ class _GenerationCard extends StatelessWidget {
   final AiTryOnGeneration generation;
   final String errorMessage;
 
-  const _GenerationCard({
-    required this.generation,
-    required this.errorMessage,
-  });
+  const _GenerationCard({required this.generation, required this.errorMessage});
 
   Color _statusColor(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -550,7 +637,8 @@ class _GenerationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final previewUrl = generation.resultImageUrl ?? generation.mannequinImageUrl;
+    final previewUrl =
+        generation.resultImageUrl ?? generation.mannequinImageUrl;
     final imageFit = generation.resultImageUrl != null
         ? BoxFit.contain
         : BoxFit.contain;
@@ -620,8 +708,9 @@ class _GenerationCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: Theme.of(context).colorScheme.errorContainer
-                      .withValues(alpha: 0.55),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.errorContainer.withValues(alpha: 0.55),
                 ),
                 child: Text(
                   errorMessage,
