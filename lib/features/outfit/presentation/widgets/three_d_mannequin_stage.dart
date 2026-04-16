@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../avatar/domain/models/mannequin_manifest.dart';
+import '../../../avatar/domain/services/mannequin_manifest_service.dart';
 import '../../../avatar/presentation/widgets/avatar_canvas.dart';
 import '../../../wardrobe/domain/models/clothing_item.dart';
 
 class ThreeDMannequinStage extends StatelessWidget {
+  static const _manifestService = MannequinManifestService();
+
   final List<ClothingItem> items;
   final double yaw;
   final double zoom;
@@ -53,26 +57,33 @@ class ThreeDMannequinStage extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                ),
-                child: Text(
-                  'Foundation',
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              FutureBuilder<MannequinManifest>(
+                future: _manifestService.loadStandardManifest(),
+                builder: (context, snapshot) {
+                  final manifest = snapshot.data;
+                  final label = manifest?.hasRealModel == true
+                      ? 'GLB ready'
+                      : 'Manifest ready';
+
+                  return _StageBadge(label: label);
+                },
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(
-            'This stage is ready for a real GLB mannequin renderer. Current preview still uses the studio mannequin so we can keep building camera and motion controls now.',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          FutureBuilder<MannequinManifest>(
+            future: _manifestService.loadStandardManifest(),
+            builder: (context, snapshot) {
+              final manifest = snapshot.data;
+              final slotCount = manifest?.garmentSlots.length;
+
+              return Text(
+                manifest?.hasRealModel == true
+                    ? 'Loaded ${manifest!.displayName}. Slots available: $slotCount.'
+                    : '3D manifest is ready. Add the licensed GLB asset next; current preview still uses the studio mannequin while camera and motion controls are prepared.',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              );
+            },
           ),
           const SizedBox(height: 18),
           Transform.scale(
@@ -117,6 +128,32 @@ class ThreeDMannequinStage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StageBadge extends StatelessWidget {
+  final String label;
+
+  const _StageBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: colorScheme.primary.withValues(alpha: 0.12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
