@@ -10,7 +10,9 @@ import '../../../avatar/domain/services/smart_placement_service.dart';
 import '../../domain/services/garment_processor.dart';
 
 class AddClothingPage extends StatefulWidget {
-  const AddClothingPage({super.key});
+  final String? initialCategory;
+
+  const AddClothingPage({super.key, this.initialCategory});
 
   @override
   State<AddClothingPage> createState() => _AddClothingPageState();
@@ -24,7 +26,7 @@ class _AddClothingPageState extends State<AddClothingPage> {
   final garmentProcessor = const GarmentProcessor();
   final smartPlacementService = const SmartPlacementService();
 
-  String _selectedCategory = 'Top';
+  late String _selectedCategory;
   String _selectedColor = 'Black';
   String _selectedSeason = 'All Seasons';
   String _selectedOccasion = 'Casual';
@@ -49,6 +51,14 @@ class _AddClothingPageState extends State<AddClothingPage> {
     'Autumn',
   ];
   final List<String> occasions = ['Casual', 'Office', 'Date'];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategory = categories.contains(widget.initialCategory)
+        ? widget.initialCategory!
+        : 'Top';
+  }
 
   @override
   void dispose() {

@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../avatar/presentation/widgets/avatar_canvas.dart';
 import '../../../wardrobe/domain/models/clothing_item.dart';
+import '../../../wardrobe/presentation/pages/add_clothing_page.dart';
+import 'saved_outfits_page.dart';
 import '../widgets/three_d_mannequin_stage.dart';
 
 enum TryOnRenderMode { studio2d, mannequin3d }
@@ -94,6 +96,8 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
     ?_selectedShoes,
   ];
 
+  bool get _hasSelections => _previewItems.isNotEmpty;
+
   String? _commonValue(Iterable<String> values) {
     final distinct = values.where((value) => value.trim().isNotEmpty).toSet();
     if (distinct.length == 1) {
@@ -134,9 +138,12 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Studio outfit saved')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Studio outfit saved'),
+          action: SnackBarAction(label: 'View', onPressed: _openSavedOutfits),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,12 +164,34 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
     });
   }
 
+  Future<void> _openSavedOutfits() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SavedOutfitsPage()),
+    );
+  }
+
+  Future<void> _goToAddCategory(String category) async {
+    final insertedId = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddClothingPage(initialCategory: category),
+      ),
+    );
+
+    if (insertedId != null) {
+      await _loadWardrobe();
+    }
+  }
+
   Future<void> _pickItem({
     required String title,
     required List<ClothingItem> items,
     required ClothingItem? selectedItem,
+    required String addCategory,
     required ValueChanged<ClothingItem?> onSelected,
   }) async {
+    var shouldClearSelection = false;
     final picked = await showModalBottomSheet<ClothingItem?>(
       context: context,
       isScrollControlled: true,
@@ -191,18 +220,24 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                   leading: const CircleAvatar(child: Icon(Icons.clear)),
                   title: const Text('None'),
                   subtitle: const Text('Remove this layer from the studio'),
-                  onTap: () => Navigator.pop(context, null),
+                  onTap: () {
+                    shouldClearSelection = true;
+                    Navigator.pop(context);
+                  },
                 ),
                 const Divider(height: 1),
                 Expanded(
                   child: items.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No items in this category yet.',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                      ? _EmptyCategoryPrompt(
+                          title: 'No ${addCategory.toLowerCase()} items yet',
+                          subtitle: 'Add one to use it in your studio looks.',
+                          onAdd: () {
+                            Navigator.pop(context);
+                            _goToAddCategory(addCategory);
+                          },
                         )
                       : ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 12),
                           itemCount: items.length,
                           separatorBuilder: (_, _) => const Divider(height: 1),
                           itemBuilder: (context, index) {
@@ -244,6 +279,18 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                           },
                         ),
                 ),
+                if (items.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _goToAddCategory(addCategory);
+                      },
+                      icon: const Icon(Icons.add),
+                      label: Text('Add $addCategory'),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -251,11 +298,15 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
       },
     );
 
+    if (picked == null && !shouldClearSelection) return;
+
     onSelected(picked);
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedCount = _previewItems.length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F1),
       appBar: AppBar(
@@ -277,6 +328,15 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const _StudioHeroCard(),
+                  const SizedBox(height: 16),
+                  _ActiveLookBar(
+                    selectedCount: selectedCount,
+                    top: _selectedTop,
+                    bottom: _selectedBottom,
+                    shoes: _selectedShoes,
+                    onClear: _hasSelections ? _clearSelections : null,
+                    onSaved: _openSavedOutfits,
+                  ),
                   const SizedBox(height: 20),
                   Center(
                     child: SegmentedButton<TryOnRenderMode>(
@@ -378,10 +438,12 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                     title: 'Top',
                     subtitle: _selectedTop?.title ?? 'Pick a top',
                     icon: Icons.checkroom_outlined,
+                    isSelected: _selectedTop != null,
                     onTap: () => _pickItem(
                       title: 'Choose Top',
                       items: _tops,
                       selectedItem: _selectedTop,
+                      addCategory: 'Top',
                       onSelected: (item) {
                         setState(() => _selectedTop = item);
                       },
@@ -392,10 +454,12 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                     title: 'Bottom',
                     subtitle: _selectedBottom?.title ?? 'Pick a bottom',
                     icon: Icons.accessibility_new_outlined,
+                    isSelected: _selectedBottom != null,
                     onTap: () => _pickItem(
                       title: 'Choose Bottom',
                       items: _bottoms,
                       selectedItem: _selectedBottom,
+                      addCategory: 'Bottom',
                       onSelected: (item) {
                         setState(() => _selectedBottom = item);
                       },
@@ -406,10 +470,12 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                     title: 'Shoes',
                     subtitle: _selectedShoes?.title ?? 'Pick shoes',
                     icon: Icons.hiking_outlined,
+                    isSelected: _selectedShoes != null,
                     onTap: () => _pickItem(
                       title: 'Choose Shoes',
                       items: _shoes,
                       selectedItem: _selectedShoes,
+                      addCategory: 'Shoes',
                       onSelected: (item) {
                         setState(() => _selectedShoes = item);
                       },
@@ -420,14 +486,16 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _clearSelections,
+                          onPressed: _hasSelections ? _clearSelections : null,
                           child: const Text('Clear'),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: FilledButton(
-                          onPressed: _isSaving ? null : _saveOutfit,
+                          onPressed: _isSaving || !_hasSelections
+                              ? null
+                              : _saveOutfit,
                           child: Text(
                             _isSaving ? 'Saving...' : 'Save Studio Outfit',
                           ),
@@ -438,6 +506,173 @@ class _TryOnStudioPageState extends State<TryOnStudioPage> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _EmptyCategoryPrompt extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback onAdd;
+
+  const _EmptyCategoryPrompt({
+    required this.title,
+    required this.subtitle,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 38,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add),
+                label: const Text('Add item'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveLookBar extends StatelessWidget {
+  final int selectedCount;
+  final ClothingItem? top;
+  final ClothingItem? bottom;
+  final ClothingItem? shoes;
+  final VoidCallback? onClear;
+  final VoidCallback onSaved;
+
+  const _ActiveLookBar({
+    required this.selectedCount,
+    required this.top,
+    required this.bottom,
+    required this.shoes,
+    required this.onClear,
+    required this.onSaved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.style_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedCount == 0
+                      ? 'Active look is empty'
+                      : '$selectedCount piece active look',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              TextButton(onPressed: onSaved, child: const Text('Saved')),
+              TextButton(onPressed: onClear, child: const Text('Clear')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _LookChip(label: 'Top', value: top?.title),
+              _LookChip(label: 'Bottom', value: bottom?.title),
+              _LookChip(label: 'Shoes', value: shoes?.title),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LookChip extends StatelessWidget {
+  final String label;
+  final String? value;
+
+  const _LookChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasValue = value != null && value!.trim().isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: hasValue
+            ? colorScheme.primary.withValues(alpha: 0.10)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: hasValue
+              ? colorScheme.primary.withValues(alpha: 0.25)
+              : colorScheme.outlineVariant,
+        ),
+      ),
+      child: Text(
+        '$label: ${hasValue ? value! : 'None'}',
+        style: TextStyle(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          color: hasValue ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }
@@ -494,12 +729,14 @@ class _StudioSlotTile extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
+  final bool isSelected;
 
   const _StudioSlotTile({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.onTap,
+    required this.isSelected,
   });
 
   @override
@@ -559,7 +796,7 @@ class _StudioSlotTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right),
+            Icon(isSelected ? Icons.check_circle : Icons.chevron_right),
           ],
         ),
       ),
