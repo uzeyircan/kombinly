@@ -1,11 +1,11 @@
 {
   "id": "standard_mannequin_v1",
-  "version": 1,
-  "status": "placeholder",
-  "displayName": "Standard Mannequin",
+  "version": 2,
+  "status": "ready",
+  "displayName": "Standard Premium Mannequin",
   "model": {
     "format": "glb",
-    "path": null,
+    "path": "assets/mannequin/standard_female_v1.glb",
     "scale": 1.0,
     "defaultPose": "a_pose",
     "defaultCamera": {
@@ -13,6 +13,28 @@
       "distance": 3.2,
       "fieldOfView": 28.0
     }
+  },
+  "camera": {
+    "initialYaw": 0,
+    "initialPitch": -5,
+    "initialZoom": 1.0,
+    "minZoom": 0.7,
+    "maxZoom": 1.5,
+    "orbitSensitivity": 1.0
+  },
+  "lighting": {
+    "ambientIntensity": 0.85,
+    "directionalIntensity": 1.2,
+    "directionalColor": "#FFFFFF",
+    "environmentImage": null,
+    "shadowEnabled": true,
+    "shadowSoftness": 0.6
+  },
+  "renderSettings": {
+    "quality": "high",
+    "antiAlias": true,
+    "toneMappingExposure": 1.1,
+    "backgroundAlpha": 0.0
   },
   "rig": {
     "skeleton": "humanoid",
@@ -40,21 +62,45 @@
       "category": "Top",
       "anchorBone": "chest",
       "layerOrder": 20,
-      "wrapMode": "torso_front"
+      "wrapMode": "torso_front",
+      "zIndex": 30,
+      "perspectiveWeight": 0.85,
+      "overlayAnchor": {
+        "topRatio": 0.12,
+        "centerXRatio": 0.50,
+        "widthRatio": 0.52,
+        "heightRatio": 0.34
+      }
     },
     {
       "id": "lower_body",
       "category": "Bottom",
       "anchorBone": "hips",
       "layerOrder": 15,
-      "wrapMode": "legs_front"
+      "wrapMode": "legs_front",
+      "zIndex": 20,
+      "perspectiveWeight": 0.75,
+      "overlayAnchor": {
+        "topRatio": 0.45,
+        "centerXRatio": 0.50,
+        "widthRatio": 0.42,
+        "heightRatio": 0.38
+      }
     },
     {
       "id": "outerwear",
       "category": "Outerwear",
       "anchorBone": "chest",
       "layerOrder": 25,
-      "wrapMode": "torso_full"
+      "wrapMode": "torso_full",
+      "zIndex": 35,
+      "perspectiveWeight": 0.90,
+      "overlayAnchor": {
+        "topRatio": 0.10,
+        "centerXRatio": 0.50,
+        "widthRatio": 0.58,
+        "heightRatio": 0.52
+      }
     },
     {
       "id": "feet",
@@ -62,7 +108,15 @@
       "anchorBone": "leftFoot",
       "secondaryAnchorBone": "rightFoot",
       "layerOrder": 10,
-      "wrapMode": "feet_pair"
+      "wrapMode": "feet_pair",
+      "zIndex": 10,
+      "perspectiveWeight": 0.60,
+      "overlayAnchor": {
+        "topRatio": 0.85,
+        "centerXRatio": 0.50,
+        "widthRatio": 0.38,
+        "heightRatio": 0.14
+      }
     }
   ],
   "motion": {
@@ -70,7 +124,8 @@
     "windAffectedZones": ["hem", "sleeve_edge", "outerwear_edge"]
   },
   "notes": [
-    "Replace model.path with a real GLB asset once the licensed mannequin is ready.",
-    "Keep bone names stable; Flutter and AI rendering will depend on this manifest."
+    "V2: Extended schema with camera, lighting, renderSettings and overlayAnchor.",
+    "overlayAnchor defines where 2D garment images are composited onto the 3D scene.",
+    "perspectiveWeight controls how strongly yaw rotation affects garment skew."
   ]
 }
