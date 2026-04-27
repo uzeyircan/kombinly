@@ -35,7 +35,7 @@ class ThreeDMannequinStage extends StatefulWidget {
 }
 
 class _ThreeDMannequinStageState extends State<ThreeDMannequinStage> {
-  bool _modelLoaded = false;
+  final bool _modelLoaded = false;
 
   AvatarViewMode _resolveViewMode() {
     if (widget.yaw < -0.2) return AvatarViewMode.quarterLeft;
@@ -49,8 +49,7 @@ class _ThreeDMannequinStageState extends State<ThreeDMannequinStage> {
       future: ThreeDMannequinStage._manifestService.loadStandardManifest(),
       builder: (context, snapshot) {
         final manifest = snapshot.data;
-        final use3D =
-            manifest != null && manifest.hasRealModel;
+        final use3D = manifest != null && manifest.hasRealModel;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,7 +104,6 @@ class _Premium3DScene extends StatelessWidget {
     required this.yaw,
     required this.zoom,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -178,11 +176,7 @@ class _Fallback2DScene extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.scale(
       scale: zoom,
-      child: AvatarCanvas(
-        items: items,
-        height: 580,
-        viewMode: viewMode,
-      ),
+      child: AvatarCanvas(items: items, height: 580, viewMode: viewMode),
     );
   }
 }
@@ -225,10 +219,7 @@ class _StageHeader extends StatelessWidget {
         Expanded(
           child: Text(
             use3D ? 'Premium 3D Stage' : '3D Mannequin Stage',
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
         ),
         _StageBadge(label: badgeLabel, color: badgeColor),

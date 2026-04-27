@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../avatar/presentation/widgets/avatar_canvas.dart';
 import '../../../wardrobe/domain/models/clothing_item.dart';
 import '../../domain/models/saved_outfit.dart';
+import '../../domain/models/saved_outfit_recommendation.dart';
 
 class SavedOutfitsPage extends StatefulWidget {
   const SavedOutfitsPage({super.key});
@@ -19,6 +20,7 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
   bool _isDeleting = false;
 
   List<SavedOutfit> _outfits = [];
+  List<SavedOutfitRecommendation> _recommendations = [];
   Map<String, ClothingItem> _clothesById = {};
 
   @override
@@ -37,6 +39,7 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
       if (!mounted) return;
       setState(() {
         _outfits = [];
+        _recommendations = [];
         _clothesById = {};
         _isLoading = false;
       });
@@ -44,6 +47,8 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
     }
 
     try {
+      final recommendations = await _loadRecommendations(user.id);
+
       final outfitsData = await supabase
           .from('outfits')
           .select()
@@ -77,6 +82,7 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
       if (!mounted) return;
       setState(() {
         _outfits = outfits;
+        _recommendations = recommendations;
         _clothesById = clothesById;
         _isLoading = false;
       });
@@ -84,12 +90,35 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
       if (!mounted) return;
       setState(() {
         _outfits = [];
+        _recommendations = [];
         _clothesById = {};
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load saved outfits: $e')),
       );
+    }
+  }
+
+  Future<List<SavedOutfitRecommendation>> _loadRecommendations(
+    String userId,
+  ) async {
+    try {
+      final data = await supabase
+          .from('outfit_recommendations')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 12));
+
+      return (data as List)
+          .map(
+            (item) =>
+                SavedOutfitRecommendation.fromMap(item as Map<String, dynamic>),
+          )
+          .toList();
+    } on PostgrestException catch (_) {
+      return const [];
     }
   }
 
@@ -128,6 +157,39 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
     }
   }
 
+  Future<void> _deleteRecommendation(String recommendationId) async {
+    setState(() {
+      _isDeleting = true;
+    });
+
+    try {
+      await supabase
+          .from('outfit_recommendations')
+          .delete()
+          .eq('id', recommendationId);
+
+      if (!mounted) return;
+      setState(() {
+        _recommendations.removeWhere((e) => e.id == recommendationId);
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Recommendation deleted')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete recommendation: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
+    }
+  }
+
   String _formatDate(DateTime value) {
     final day = value.day.toString().padLeft(2, '0');
     final month = value.month.toString().padLeft(2, '0');
@@ -149,6 +211,24 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
     return parts.isEmpty ? 'No details' : parts.join(' • ');
   }
 
+  String _buildRecommendationMetaLine(SavedOutfitRecommendation item) {
+    final parts = <String>[item.scenario];
+
+    if (item.style != null && item.style!.trim().isNotEmpty) {
+      parts.add(item.style!);
+    }
+
+    if (item.environment != null && item.environment!.trim().isNotEmpty) {
+      parts.add(item.environment!);
+    }
+
+    if (item.score != null) {
+      parts.add('${item.score!.round()}/100');
+    }
+
+    return parts.join(' • ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,7 +246,7 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _outfits.isEmpty
+          : _recommendations.isEmpty && _outfits.isEmpty
           ? RefreshIndicator(
               onRefresh: _loadSavedOutfits,
               child: ListView(
@@ -179,32 +259,73 @@ class _SavedOutfitsPageState extends State<SavedOutfitsPage> {
             )
           : RefreshIndicator(
               onRefresh: _loadSavedOutfits,
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(18, 10, 18, 32),
-                itemCount: _outfits.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final outfit = _outfits[index];
+              child: _recommendations.isNotEmpty
+                  ? ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(18, 10, 18, 32),
+                      itemCount: _recommendations.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final item = _recommendations[index];
 
-                  final top = _findClothing(outfit.topId);
-                  final bottom = _findClothing(outfit.bottomId);
-                  final shoes = _findClothing(outfit.shoesId);
+                        final top = _findClothing(item.topId);
+                        final bottom = _findClothing(item.bottomId);
+                        final shoes = _findClothing(item.shoesId);
+                        final outerwear = _findClothing(item.outerwearId);
+                        final accessory = _findClothing(item.accessoryId);
 
-                  final previewItems = <ClothingItem>[?top, ?bottom, ?shoes];
+                        final previewItems = <ClothingItem>[
+                          ?top,
+                          ?bottom,
+                          ?shoes,
+                          ?outerwear,
+                          ?accessory,
+                        ];
 
-                  return _SavedOutfitCard(
-                    outfit: outfit,
-                    previewItems: previewItems,
-                    top: top,
-                    bottom: bottom,
-                    shoes: shoes,
-                    isDeleting: _isDeleting,
-                    onDelete: () => _deleteOutfit(outfit.id),
-                    formattedDate: _formatDate(outfit.createdAt),
-                    metaLine: _buildMetaLine(outfit),
-                  );
-                },
-              ),
+                        return _SavedRecommendationCard(
+                          recommendation: item,
+                          previewItems: previewItems,
+                          top: top,
+                          bottom: bottom,
+                          shoes: shoes,
+                          outerwear: outerwear,
+                          accessory: accessory,
+                          isDeleting: _isDeleting,
+                          onDelete: () => _deleteRecommendation(item.id),
+                          formattedDate: _formatDate(item.createdAt),
+                          metaLine: _buildRecommendationMetaLine(item),
+                        );
+                      },
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(18, 10, 18, 32),
+                      itemCount: _outfits.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final outfit = _outfits[index];
+
+                        final top = _findClothing(outfit.topId);
+                        final bottom = _findClothing(outfit.bottomId);
+                        final shoes = _findClothing(outfit.shoesId);
+
+                        final previewItems = <ClothingItem>[
+                          ?top,
+                          ?bottom,
+                          ?shoes,
+                        ];
+
+                        return _SavedOutfitCard(
+                          outfit: outfit,
+                          previewItems: previewItems,
+                          top: top,
+                          bottom: bottom,
+                          shoes: shoes,
+                          isDeleting: _isDeleting,
+                          onDelete: () => _deleteOutfit(outfit.id),
+                          formattedDate: _formatDate(outfit.createdAt),
+                          metaLine: _buildMetaLine(outfit),
+                        );
+                      },
+                    ),
             ),
     );
   }
@@ -254,6 +375,157 @@ class _SavedOutfitsEmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SavedRecommendationCard extends StatelessWidget {
+  final SavedOutfitRecommendation recommendation;
+  final List<ClothingItem> previewItems;
+  final ClothingItem? top;
+  final ClothingItem? bottom;
+  final ClothingItem? shoes;
+  final ClothingItem? outerwear;
+  final ClothingItem? accessory;
+  final bool isDeleting;
+  final VoidCallback onDelete;
+  final String formattedDate;
+  final String metaLine;
+
+  const _SavedRecommendationCard({
+    required this.recommendation,
+    required this.previewItems,
+    required this.top,
+    required this.bottom,
+    required this.shoes,
+    required this.outerwear,
+    required this.accessory,
+    required this.isDeleting,
+    required this.onDelete,
+    required this.formattedDate,
+    required this.metaLine,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AvatarCanvas(
+            items: previewItems,
+            height: 390,
+            padding: const EdgeInsets.all(12),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        recommendation.scenario,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (recommendation.score != null)
+                      _ScorePill(score: recommendation.score!.round()),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$metaLine • $formattedDate',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+                if (recommendation.aiReason != null &&
+                    recommendation.aiReason!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    recommendation.aiReason!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(height: 1.35),
+                  ),
+                ],
+                if (recommendation.missingItems.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: recommendation.missingItems
+                        .map((item) => Chip(label: Text('Eksik: $item')))
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                _InfoRow(label: 'Top', value: top?.title ?? 'Not included'),
+                const SizedBox(height: 8),
+                _InfoRow(
+                  label: 'Bottom',
+                  value: bottom?.title ?? 'Not included',
+                ),
+                const SizedBox(height: 8),
+                _InfoRow(label: 'Shoes', value: shoes?.title ?? 'Not included'),
+                if (outerwear != null) ...[
+                  const SizedBox(height: 8),
+                  _InfoRow(label: 'Outer', value: outerwear!.title),
+                ],
+                if (accessory != null) ...[
+                  const SizedBox(height: 8),
+                  _InfoRow(label: 'Accessory', value: accessory!.title),
+                ],
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonalIcon(
+                    onPressed: isDeleting ? null : onDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Delete'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScorePill extends StatelessWidget {
+  final int score;
+
+  const _ScorePill({required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$score/100',
+        style: TextStyle(
+          color: colorScheme.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

@@ -39,7 +39,9 @@ class _HomePageState extends State<HomePage> {
       PostgrestException? lastPostgrestError;
       var updateSucceeded = false;
 
-      for (final candidate in ProfileGender.storageCandidates(normalizedValue)) {
+      for (final candidate in ProfileGender.storageCandidates(
+        normalizedValue,
+      )) {
         try {
           await _supabase
               .from('profiles')
@@ -54,7 +56,9 @@ class _HomePageState extends State<HomePage> {
 
       if (!updateSucceeded) {
         throw lastPostgrestError ??
-            PostgrestException(message: 'Could not find an accepted gender value');
+            PostgrestException(
+              message: 'Could not find an accepted gender value',
+            );
       }
 
       if (!mounted) return;
@@ -218,6 +222,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildRecommendationPage() {
+    return TodayOutfitPage(initialGender: _gender);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,16 +245,16 @@ class _HomePageState extends State<HomePage> {
         children: [
           _HomeHeroCard(
             gender: ProfileGender.label(_gender),
-            onAiReady: () {
+            onRecommend: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AiTryOnPage()),
+                MaterialPageRoute(builder: (_) => _buildRecommendationPage()),
               );
             },
-            onStudio: () {
+            onWardrobe: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const TryOnStudioPage()),
+                MaterialPageRoute(builder: (_) => const WardrobePage()),
               );
             },
             onSaved: () {
@@ -258,7 +266,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 22),
           Text(
-            'Start here',
+            'Başla',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
@@ -266,14 +274,14 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 14),
           _HomeActionCard(
-            title: 'AI Try-On',
-            subtitle: 'Turn wardrobe pieces into realistic mannequin looks',
-            icon: Icons.auto_fix_high_outlined,
-            accentColor: const Color(0xFFB85C38),
+            title: 'Gardıroptan Kombin',
+            subtitle: 'Senaryo, stil ve ortama göre ne giyeceğine karar ver',
+            icon: Icons.auto_awesome_outlined,
+            accentColor: const Color(0xFF8B6F3D),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AiTryOnPage()),
+                MaterialPageRoute(builder: (_) => _buildRecommendationPage()),
               );
             },
           ),
@@ -292,8 +300,21 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 14),
           _HomeActionCard(
+            title: 'Saved Outfits',
+            subtitle: 'Karar motorunun önerilerini ve kayıtlı kombinlerini gör',
+            icon: Icons.bookmark_outline,
+            accentColor: const Color(0xFF704F62),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SavedOutfitsPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          _HomeActionCard(
             title: 'Try On Studio',
-            subtitle: 'Build manual outfit previews on the mannequin',
+            subtitle: 'Manken üzerinde manuel kombin önizlemesi oluştur',
             icon: Icons.view_in_ar_outlined,
             accentColor: const Color(0xFF3F6C7B),
             onTap: () {
@@ -305,27 +326,15 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 14),
           _HomeActionCard(
-            title: 'Today’s Outfit',
-            subtitle: 'Generate outfit ideas from your wardrobe',
-            icon: Icons.auto_awesome_outlined,
-            accentColor: const Color(0xFF8B6F3D),
+            title: 'AI Try-On',
+            subtitle:
+                'Experimental: generate AI try-on images from wardrobe pieces',
+            icon: Icons.auto_fix_high_outlined,
+            accentColor: const Color(0xFFB85C38),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const TodayOutfitPage()),
-              );
-            },
-          ),
-          const SizedBox(height: 14),
-          _HomeActionCard(
-            title: 'Saved Outfits',
-            subtitle: 'Revisit the looks you liked most',
-            icon: Icons.bookmark_outline,
-            accentColor: const Color(0xFF704F62),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SavedOutfitsPage()),
+                MaterialPageRoute(builder: (_) => const AiTryOnPage()),
               );
             },
           ),
@@ -337,14 +346,14 @@ class _HomePageState extends State<HomePage> {
 
 class _HomeHeroCard extends StatelessWidget {
   final String gender;
-  final VoidCallback onAiReady;
-  final VoidCallback onStudio;
+  final VoidCallback onRecommend;
+  final VoidCallback onWardrobe;
   final VoidCallback onSaved;
 
   const _HomeHeroCard({
     required this.gender,
-    required this.onAiReady,
-    required this.onStudio,
+    required this.onRecommend,
+    required this.onWardrobe,
     required this.onSaved,
   });
 
@@ -387,10 +396,10 @@ class _HomeHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           const Text(
-            'Your hybrid fashion studio',
+            'Ne giyeceğine birlikte karar verelim',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 32,
+              fontSize: 30,
               fontWeight: FontWeight.w900,
               letterSpacing: -1.0,
               height: 1.02,
@@ -398,7 +407,7 @@ class _HomeHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Organize your wardrobe, preview outfits, and create AI-powered try-on images from the pieces you already own.',
+            'Senaryonu, stilini ve ortamını seç. Kombinly gardırobundaki parçalardan uygun kombini önerir, eksikleri gösterir ve manken üzerinde önizletir.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.82),
               fontSize: 16,
@@ -409,22 +418,18 @@ class _HomeHeroCard extends StatelessWidget {
           Row(
             children: [
               _HeroMetric(
-                label: 'AI ready',
-                icon: Icons.auto_fix_high,
-                onTap: onAiReady,
+                label: 'Kombin',
+                icon: Icons.auto_awesome,
+                onTap: onRecommend,
               ),
               const SizedBox(width: 10),
               _HeroMetric(
-                label: 'Studio',
-                icon: Icons.view_in_ar,
-                onTap: onStudio,
+                label: 'Gardırop',
+                icon: Icons.checkroom,
+                onTap: onWardrobe,
               ),
               const SizedBox(width: 10),
-              _HeroMetric(
-                label: 'Saved',
-                icon: Icons.bookmark,
-                onTap: onSaved,
-              ),
+              _HeroMetric(label: 'Saved', icon: Icons.bookmark, onTap: onSaved),
             ],
           ),
         ],
@@ -509,8 +514,9 @@ class _HomeActionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(26),
           color: Colors.white.withValues(alpha: 0.74),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant
-                .withValues(alpha: 0.52),
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.52),
           ),
         ),
         child: Padding(

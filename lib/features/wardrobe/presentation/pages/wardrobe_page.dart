@@ -398,10 +398,26 @@ class _WardrobeItemCard extends StatelessWidget {
     return item.isProcessed ? 'Processed' : 'Pending';
   }
 
+  String? _styleMetaText(ClothingItem item) {
+    final parts = <String>[];
+
+    final genderTarget = item.genderTarget?.trim();
+    if (genderTarget != null && genderTarget.isNotEmpty) {
+      parts.add(genderTarget);
+    }
+
+    if (item.styleTags.isNotEmpty) {
+      parts.add(item.styleTags.take(2).join(', '));
+    }
+
+    return parts.isEmpty ? null : parts.join(' • ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final imageUrl = item.renderImageUrl;
     final statusText = _statusLabel(item);
+    final styleMetaText = _styleMetaText(item);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
@@ -524,6 +540,13 @@ class _WardrobeItemCard extends StatelessWidget {
                       icon: Icons.event_available_outlined,
                       text: '${item.season} • ${item.occasion}',
                     ),
+                    if (styleMetaText != null) ...[
+                      const SizedBox(height: 3),
+                      _MetaLine(
+                        icon: Icons.style_outlined,
+                        text: styleMetaText,
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     Row(
                       children: [

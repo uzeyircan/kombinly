@@ -21,6 +21,8 @@ class AddClothingPage extends StatefulWidget {
 class _AddClothingPageState extends State<AddClothingPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
+  final _styleTagsController = TextEditingController();
+  final _notesController = TextEditingController();
   final supabase = Supabase.instance.client;
   final imagePicker = ImagePicker();
   final garmentProcessor = const GarmentProcessor();
@@ -30,11 +32,18 @@ class _AddClothingPageState extends State<AddClothingPage> {
   String _selectedColor = 'Black';
   String _selectedSeason = 'All Seasons';
   String _selectedOccasion = 'Casual';
+  String _selectedGenderTarget = 'Unisex';
 
   bool _isLoading = false;
   File? _selectedImageFile;
 
-  final List<String> categories = ['Top', 'Bottom', 'Outerwear', 'Shoes'];
+  final List<String> categories = [
+    'Top',
+    'Bottom',
+    'Outerwear',
+    'Shoes',
+    'Accessory',
+  ];
   final List<String> colors = [
     'Black',
     'White',
@@ -42,6 +51,9 @@ class _AddClothingPageState extends State<AddClothingPage> {
     'Red',
     'Beige',
     'Gray',
+    'Green',
+    'Brown',
+    'Navy',
   ];
   final List<String> seasons = [
     'All Seasons',
@@ -50,7 +62,17 @@ class _AddClothingPageState extends State<AddClothingPage> {
     'Spring',
     'Autumn',
   ];
-  final List<String> occasions = ['Casual', 'Office', 'Date'];
+  final List<String> occasions = [
+    'Casual',
+    'Office',
+    'Date',
+    'Formal',
+    'Sport',
+    'School',
+    'Travel',
+    'Special Event',
+  ];
+  final List<String> genderTargets = ['Unisex', 'Men', 'Women'];
 
   @override
   void initState() {
@@ -63,13 +85,23 @@ class _AddClothingPageState extends State<AddClothingPage> {
   @override
   void dispose() {
     _titleController.dispose();
+    _styleTagsController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  List<String> _parseStyleTags() {
+    return _styleTagsController.text
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await imagePicker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         imageQuality: 85,
       );
 
@@ -83,6 +115,35 @@ class _AddClothingPageState extends State<AddClothingPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Image selection failed: $e')));
+    }
+  }
+
+  Future<void> _showImageSourcePicker() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Take photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source != null) {
+      await _pickImage(source);
     }
   }
 
@@ -151,6 +212,59 @@ class _AddClothingPageState extends State<AddClothingPage> {
     return supabase.storage.from('clothes-images').getPublicUrl(path);
   }
 
+  int _layerOrderForCategory(String category) {
+    switch (category.trim().toLowerCase()) {
+      case 'shoes':
+        return 10;
+      case 'bottom':
+        return 15;
+      case 'top':
+        return 20;
+      case 'outerwear':
+        return 25;
+      case 'accessory':
+        return 30;
+      default:
+        return 20;
+    }
+  }
+
+  String _targetSlotForCategory(String category) {
+    switch (category.trim().toLowerCase()) {
+      case 'top':
+        return 'upper_body';
+      case 'bottom':
+        return 'lower_body';
+      case 'outerwear':
+        return 'outerwear';
+      case 'shoes':
+        return 'feet';
+      case 'accessory':
+        return 'accessories';
+      default:
+        return 'upper_body';
+    }
+  }
+
+  Future<Map<String, dynamic>> _insertClothing({
+    required Map<String, dynamic> enrichedPayload,
+    required Map<String, dynamic> fallbackPayload,
+  }) async {
+    try {
+      return await supabase
+          .from('clothes')
+          .insert(enrichedPayload)
+          .select()
+          .single();
+    } on PostgrestException catch (_) {
+      return await supabase
+          .from('clothes')
+          .insert(fallbackPayload)
+          .select()
+          .single();
+    }
+  }
+
   Future<void> _saveItem() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -201,37 +315,49 @@ class _AddClothingPageState extends State<AddClothingPage> {
         fitProfile: fitProfile,
       );
 
-      final inserted = await supabase
-          .from('clothes')
-          .insert({
-            'user_id': user.id,
-            'title': _titleController.text.trim(),
-            'category': _selectedCategory,
-            'color': _selectedColor,
-            'season': _selectedSeason,
-            'occasion': _selectedOccasion,
-            'image_url': originalImageUrl,
-            'processed_image_url': processedImageUrl,
-            'crop_scale': smartPlacement.cropScale,
-            'offset_x': smartPlacement.offsetX,
-            'offset_y': smartPlacement.offsetY,
-            'rotation': smartPlacement.rotation,
-            'aspect_ratio': aspectRatio,
-            'fit_profile': fitProfile,
-            'is_processed': processedImageUrl != null,
-            'needs_review': processedImageUrl == null,
-            'last_processed_at': processedImageUrl != null
-                ? DateTime.now().toIso8601String()
-                : null,
-            'motion_type': 'none',
-            'motion_intensity': 0.0,
-            'motion_speed': 0.0,
-            'is_live_supported': false,
-            'mannequin_gender': null,
-            'garment_template': null,
-          })
-          .select()
-          .single();
+      final basePayload = {
+        'user_id': user.id,
+        'title': _titleController.text.trim(),
+        'category': _selectedCategory,
+        'color': _selectedColor,
+        'season': _selectedSeason,
+        'occasion': _selectedOccasion,
+        'image_url': originalImageUrl,
+        'processed_image_url': processedImageUrl,
+        'crop_scale': smartPlacement.cropScale,
+        'offset_x': smartPlacement.offsetX,
+        'offset_y': smartPlacement.offsetY,
+        'rotation': smartPlacement.rotation,
+        'aspect_ratio': aspectRatio,
+        'fit_profile': fitProfile,
+        'is_processed': processedImageUrl != null,
+        'needs_review': processedImageUrl == null,
+        'last_processed_at': processedImageUrl != null
+            ? DateTime.now().toIso8601String()
+            : null,
+        'motion_type': 'none',
+        'motion_intensity': 0.0,
+        'motion_speed': 0.0,
+        'is_live_supported': false,
+        'mannequin_gender': null,
+        'garment_template': null,
+      };
+
+      final enrichedPayload = {
+        ...basePayload,
+        'gender_target': _selectedGenderTarget,
+        'style_tags': _parseStyleTags(),
+        'notes': _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        'layer_order': _layerOrderForCategory(_selectedCategory),
+        'target_slot': _targetSlotForCategory(_selectedCategory),
+      };
+
+      final inserted = await _insertClothing(
+        enrichedPayload: enrichedPayload,
+        fallbackPayload: basePayload,
+      );
 
       final insertedItemId = inserted['id'] as String;
 
@@ -252,7 +378,7 @@ class _AddClothingPageState extends State<AddClothingPage> {
   Widget _buildImagePreview() {
     if (_selectedImageFile == null) {
       return InkWell(
-        onTap: _pickImage,
+        onTap: _showImageSourcePicker,
         borderRadius: BorderRadius.circular(28),
         child: Ink(
           height: 190,
@@ -295,7 +421,7 @@ class _AddClothingPageState extends State<AddClothingPage> {
         ),
         const SizedBox(height: 12),
         OutlinedButton(
-          onPressed: _pickImage,
+          onPressed: _showImageSourcePicker,
           child: const Text('Change Image'),
         ),
       ],
@@ -425,6 +551,48 @@ class _AddClothingPageState extends State<AddClothingPage> {
                         _selectedOccasion = value;
                       });
                     },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedGenderTarget,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender Target',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: genderTargets
+                        .map(
+                          (e) => DropdownMenuItem<String>(
+                            value: e,
+                            child: Text(e),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedGenderTarget = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _styleTagsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Style Tags',
+                      hintText: 'smart casual, minimal, premium',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _notesController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes',
+                      hintText: 'Fit, fabric, or when this piece works best',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ],
               ),

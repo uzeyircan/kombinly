@@ -56,7 +56,22 @@ class AvatarSlots {
     zIndex: 10,
   );
 
-  static const List<AvatarSlot> all = [upperBody, lowerBody, outerwear, feet];
+  static const AvatarSlot accessories = AvatarSlot(
+    id: 'accessories',
+    centerX: 0.50,
+    centerY: 0.22,
+    widthRatio: 0.32,
+    heightRatio: 0.16,
+    zIndex: 30,
+  );
+
+  static const List<AvatarSlot> all = [
+    upperBody,
+    lowerBody,
+    outerwear,
+    feet,
+    accessories,
+  ];
 
   static AvatarSlot? byId(String id) {
     for (final slot in all) {

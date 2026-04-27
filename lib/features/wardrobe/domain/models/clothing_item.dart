@@ -4,9 +4,12 @@ class ClothingItem {
   final String id;
   final String title;
   final String category;
+  final String? genderTarget;
   final String color;
   final String season;
   final String occasion;
+  final List<String> styleTags;
+  final String? notes;
 
   final String? imageUrl;
   final String? processedImageUrl;
@@ -32,9 +35,12 @@ class ClothingItem {
     required this.id,
     required this.title,
     required this.category,
+    required this.genderTarget,
     required this.color,
     required this.season,
     required this.occasion,
+    required this.styleTags,
+    required this.notes,
     required this.imageUrl,
     required this.processedImageUrl,
     required this.cropScale,
@@ -58,9 +64,12 @@ class ClothingItem {
       id: map['id'] as String,
       title: (map['title'] as String?) ?? 'Untitled item',
       category: (map['category'] as String?) ?? 'Top',
+      genderTarget: map['gender_target'] as String?,
       color: (map['color'] as String?) ?? 'Unknown',
       season: (map['season'] as String?) ?? 'All Seasons',
       occasion: (map['occasion'] as String?) ?? 'Casual',
+      styleTags: _parseStyleTags(map['style_tags']),
+      notes: map['notes'] as String?,
       imageUrl: map['image_url'] as String?,
       processedImageUrl: map['processed_image_url'] as String?,
       cropScale: ((map['crop_scale'] ?? 1.0) as num).toDouble(),
@@ -87,9 +96,12 @@ class ClothingItem {
       'id': id,
       'title': title,
       'category': category,
+      'gender_target': genderTarget,
       'color': color,
       'season': season,
       'occasion': occasion,
+      'style_tags': styleTags,
+      'notes': notes,
       'image_url': imageUrl,
       'processed_image_url': processedImageUrl,
       'crop_scale': cropScale,
@@ -113,9 +125,12 @@ class ClothingItem {
     String? id,
     String? title,
     String? category,
+    String? genderTarget,
     String? color,
     String? season,
     String? occasion,
+    List<String>? styleTags,
+    String? notes,
     String? imageUrl,
     String? processedImageUrl,
     double? cropScale,
@@ -137,9 +152,12 @@ class ClothingItem {
       id: id ?? this.id,
       title: title ?? this.title,
       category: category ?? this.category,
+      genderTarget: genderTarget ?? this.genderTarget,
       color: color ?? this.color,
       season: season ?? this.season,
       occasion: occasion ?? this.occasion,
+      styleTags: styleTags ?? this.styleTags,
+      notes: notes ?? this.notes,
       imageUrl: imageUrl ?? this.imageUrl,
       processedImageUrl: processedImageUrl ?? this.processedImageUrl,
       cropScale: cropScale ?? this.cropScale,
@@ -188,6 +206,10 @@ class ClothingItem {
         return 'outerwear';
       case 'shoes':
         return 'feet';
+      case 'accessory':
+      case 'accessories':
+      case 'aksesuar':
+        return 'accessories';
       default:
         return 'upper_body';
     }
@@ -207,6 +229,10 @@ class ClothingItem {
         return 0.12;
       case 'shoes':
         return 0.35;
+      case 'accessory':
+      case 'accessories':
+      case 'aksesuar':
+        return 0.5;
       default:
         return 0.18;
     }
@@ -222,6 +248,10 @@ class ClothingItem {
         return 20;
       case 'outerwear':
         return 25;
+      case 'accessory':
+      case 'accessories':
+      case 'aksesuar':
+        return 30;
       default:
         return 20;
     }
@@ -232,6 +262,10 @@ class ClothingItem {
       case 'shoes':
         return FitStrategy.coverWidth;
       case 'outerwear':
+        return FitStrategy.contain;
+      case 'accessory':
+      case 'accessories':
+      case 'aksesuar':
         return FitStrategy.contain;
       case 'top':
       case 'bottom':
@@ -251,5 +285,25 @@ class ClothingItem {
       default:
         return null;
     }
+  }
+
+  static List<String> _parseStyleTags(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .whereType<String>()
+          .map((tag) => tag.trim())
+          .where((tag) => tag.isNotEmpty)
+          .toList();
+    }
+
+    if (raw is String && raw.trim().isNotEmpty) {
+      return raw
+          .split(',')
+          .map((tag) => tag.trim())
+          .where((tag) => tag.isNotEmpty)
+          .toList();
+    }
+
+    return const [];
   }
 }
