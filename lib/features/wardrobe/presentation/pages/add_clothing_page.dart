@@ -281,27 +281,21 @@ class _AddClothingPageState extends State<AddClothingPage> {
     try {
       String? originalImageUrl;
       String? processedImageUrl;
+      double aspectRatio = 1.0;
+
       if (_selectedImageFile != null) {
         originalImageUrl = await _uploadOriginalImage(user.id);
 
         if (originalImageUrl != null) {
           final processedBytes = await _removeBackground(originalImageUrl);
+          final cropped = await garmentProcessor.cropToVisibleContent(
+            processedBytes,
+          );
           processedImageUrl = await _uploadProcessedImage(
             userId: user.id,
-            pngBytes: processedBytes,
+            pngBytes: cropped.bytes,
           );
-        }
-      }
-
-      double aspectRatio = 1.0;
-
-      if (processedImageUrl != null && processedImageUrl.isNotEmpty) {
-        try {
-          aspectRatio = await garmentProcessor.detectAspectRatio(
-            processedImageUrl,
-          );
-        } catch (_) {
-          aspectRatio = 1.0;
+          aspectRatio = cropped.aspectRatio;
         }
       }
 

@@ -300,9 +300,7 @@ class _WardrobePageState extends State<WardrobePage> {
                       item: item,
                       onTap: () => _openAdjust(item),
                       onDelete: () => _confirmDelete(item),
-                      onRetry: item.isProcessed
-                          ? null
-                          : () => _retryProcessing(item),
+                      onRetry: () => _retryProcessing(item),
                       isRetrying: _reprocessingItemId == item.id,
                     );
                   },
@@ -568,7 +566,7 @@ class _WardrobeItemCard extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  isRetrying ? 'Retrying...' : 'Retry',
+                                  isRetrying ? 'Re-fitting...' : 'Re-fit',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),

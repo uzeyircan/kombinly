@@ -71,21 +71,6 @@ class KombinlyApp extends StatelessWidget {
     );
   }
 
-  Future<String> _resolveGender(SupabaseClient client, String userId) async {
-    try {
-      final profile = await client
-          .from('profiles')
-          .select('gender')
-          .eq('id', userId)
-          .maybeSingle();
-
-      final gender = (profile?['gender'] as String?)?.trim();
-      return ProfileGender.normalize(gender);
-    } catch (_) {
-      return ProfileGender.unknown;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final client = Supabase.instance.client;
@@ -104,25 +89,76 @@ class KombinlyApp extends StatelessWidget {
             return const AuthPage();
           }
 
-          return FutureBuilder<String>(
-            future: _resolveGender(client, session.user.id),
-            builder: (context, profileSnapshot) {
-              if (profileSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              final gender = profileSnapshot.data ?? ProfileGender.unknown;
-              if (gender == ProfileGender.unknown) {
-                return const GenderSelectionPage();
-              }
-
-              return HomePage(gender: gender);
-            },
-          );
+          return _ProfileRouter(userId: session.user.id);
         },
       ),
+    );
+  }
+}
+
+class _ProfileRouter extends StatefulWidget {
+  final String userId;
+
+  const _ProfileRouter({required this.userId});
+
+  @override
+  State<_ProfileRouter> createState() => _ProfileRouterState();
+}
+
+class _ProfileRouterState extends State<_ProfileRouter> {
+  late Future<String> _genderFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _genderFuture = _resolveGender();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileRouter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId) {
+      _genderFuture = _resolveGender();
+    }
+  }
+
+  Future<String> _resolveGender() async {
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('gender')
+          .eq('id', widget.userId)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 10));
+
+      final gender = (profile?['gender'] as String?)?.trim();
+      return ProfileGender.normalize(gender);
+    } catch (_) {
+      // Profil tablosu erişilemiyorsa kullanıcıyı sonsuz loading ekranında
+      // bırakmak yerine onboarding'e geçiririz. Kayıt işlemi orada yeniden
+      // denenebilir ve gerçek hata kullanıcıya gösterilebilir.
+      return ProfileGender.unknown;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _genderFuture,
+      builder: (context, profileSnapshot) {
+        if (profileSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final gender = profileSnapshot.data ?? ProfileGender.unknown;
+        if (gender == ProfileGender.unknown) {
+          return const GenderSelectionPage();
+        }
+
+        return HomePage(gender: gender);
+      },
     );
   }
 }

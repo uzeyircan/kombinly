@@ -28,26 +28,29 @@ class SmartPlacementService {
   }) {
     final normalizedCategory = category.trim().toLowerCase();
     final normalizedFitProfile = fitProfile?.trim().toLowerCase();
+    final safeAspectRatio = aspectRatio.isFinite && aspectRatio > 0
+        ? aspectRatio.clamp(0.2, 5.0)
+        : 1.0;
 
     switch (normalizedCategory) {
       case 'top':
         return _resolveTop(
-          aspectRatio: aspectRatio,
+          aspectRatio: safeAspectRatio,
           fitProfile: normalizedFitProfile,
         );
       case 'bottom':
         return _resolveBottom(
-          aspectRatio: aspectRatio,
+          aspectRatio: safeAspectRatio,
           fitProfile: normalizedFitProfile,
         );
       case 'shoes':
         return _resolveShoes(
-          aspectRatio: aspectRatio,
+          aspectRatio: safeAspectRatio,
           fitProfile: normalizedFitProfile,
         );
       case 'outerwear':
         return _resolveOuterwear(
-          aspectRatio: aspectRatio,
+          aspectRatio: safeAspectRatio,
           fitProfile: normalizedFitProfile,
         );
       default:
@@ -60,6 +63,7 @@ class SmartPlacementService {
     String? fitProfile,
   }) {
     double cropScale;
+    double offsetX = 0;
     double offsetY;
 
     switch (fitProfile) {
@@ -74,14 +78,17 @@ class SmartPlacementService {
         break;
 
       default:
-        cropScale = 1.24;
-        offsetY = -10.0;
+        cropScale = aspectRatio > 1.25 ? 1.10 : 1.24;
+        offsetY = aspectRatio < 0.75 ? -4.0 : -10.0;
         break;
     }
 
+    // Çok asimetrik ürün fotoğraflarında küçük bir görsel merkez telafisi.
+    if (aspectRatio > 1.6) offsetX = -2;
+
     return SmartPlacementResult(
       cropScale: cropScale,
-      offsetX: 0.0,
+      offsetX: offsetX,
       offsetY: offsetY,
       rotation: 0.0,
     );

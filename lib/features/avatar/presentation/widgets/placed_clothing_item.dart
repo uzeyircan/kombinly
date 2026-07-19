@@ -40,7 +40,8 @@ class PlacedClothingItem extends StatelessWidget {
 
     final placement = item.effectivePlacement;
     final slot =
-        AvatarSlots.byId(placement.targetSlot) ?? AvatarSlots.upperBody;
+        AvatarSlots.byId(placement.targetSlot) ??
+        AvatarSlots.forCategory(item.category);
 
     final resolvedAspectRatio =
         (item.aspectRatio != null && item.aspectRatio! > 0)

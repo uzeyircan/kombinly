@@ -48,6 +48,10 @@ class ReprocessClothingService {
       throw Exception('User session not found');
     }
 
+    final cropped = await garmentProcessor.cropToVisibleContent(
+      Uint8List.fromList(bytes),
+    );
+
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${category.toLowerCase()}_reprocessed.png';
     final path = '${user.id}/processed/$fileName';
@@ -56,7 +60,7 @@ class ReprocessClothingService {
         .from('clothes-images')
         .uploadBinary(
           path,
-          Uint8List.fromList(bytes),
+          cropped.bytes,
           fileOptions: const FileOptions(
             upsert: true,
             contentType: 'image/png',
@@ -67,12 +71,7 @@ class ReprocessClothingService {
         .from('clothes-images')
         .getPublicUrl(path);
 
-    double aspectRatio = 1.0;
-    try {
-      aspectRatio = await garmentProcessor.detectAspectRatio(processedImageUrl);
-    } catch (_) {
-      aspectRatio = 1.0;
-    }
+    final aspectRatio = cropped.aspectRatio;
 
     final fitProfile = garmentProcessor.resolveFitProfile(
       category,

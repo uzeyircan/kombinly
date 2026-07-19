@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../avatar/domain/models/avatar_slot.dart';
 import '../../../avatar/domain/services/fit_engine.dart';
 import '../../../avatar/domain/services/snap_engine.dart';
+import '../../../avatar/domain/services/smart_placement_service.dart';
 import '../../../avatar/presentation/widgets/avatar_canvas.dart';
 import '../../domain/models/clothing_item.dart';
 
@@ -21,6 +22,8 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
   final supabase = Supabase.instance.client;
   final FitEngine _fitEngine = const FitEngine();
   final SnapEngine _snapEngine = const SnapEngine();
+  final SmartPlacementService _smartPlacementService =
+      const SmartPlacementService();
 
   late double scale;
   late double offsetX;
@@ -33,6 +36,9 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
 
   Size? _canvasSize;
   String? _activeSnapSlotId;
+  double _gestureStartScale = 1;
+  double _gestureStartRotation = 0;
+  Offset _lastFocalPoint = Offset.zero;
 
   @override
   void initState() {
@@ -68,7 +74,8 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
 
   AvatarSlot _resolveSlot() {
     final placement = widget.item.effectivePlacement;
-    return AvatarSlots.byId(placement.targetSlot) ?? AvatarSlots.upperBody;
+    return AvatarSlots.byId(placement.targetSlot) ??
+        AvatarSlots.forCategory(widget.item.category);
   }
 
   FitResult _resolveFit({
@@ -153,19 +160,23 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
     });
   }
 
-  void _handleDragStart(DragStartDetails details) {
+  void _handleScaleStart(ScaleStartDetails details) {
+    _gestureStartScale = scale;
+    _gestureStartRotation = rotation;
+    _lastFocalPoint = details.localFocalPoint;
     setState(() {
       _isDragging = true;
     });
     _updateSnapPreview();
   }
 
-  void _handleDragUpdate(DragUpdateDetails details) {
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
     final canvasSize = _canvasSize;
     if (canvasSize == null) return;
 
     final currentCenter = _currentVisualCenter(canvasSize);
-    final desiredCenter = currentCenter + details.delta;
+    final focalDelta = details.localFocalPoint - _lastFocalPoint;
+    final desiredCenter = currentCenter + focalDelta;
     final slotRect = _targetSlotRect(canvasSize);
     final clampedCenter = _clampCenterToSlot(
       desiredCenter: desiredCenter,
@@ -178,12 +189,15 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
     setState(() {
       offsetX += dx;
       offsetY += dy;
+      scale = (_gestureStartScale * details.scale).clamp(0.5, 2.2);
+      rotation = (_gestureStartRotation + details.rotation).clamp(-1.2, 1.2);
+      _lastFocalPoint = details.localFocalPoint;
     });
 
     _updateSnapPreview();
   }
 
-  void _handleDragEnd(DragEndDetails details) {
+  void _handleScaleEnd(ScaleEndDetails details) {
     setState(() {
       _isDragging = false;
     });
@@ -247,11 +261,17 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
   }
 
   void resetAdjustments() {
+    final automatic = _smartPlacementService.resolve(
+      category: widget.item.category,
+      aspectRatio: _resolvedAspectRatio(),
+      fitProfile: widget.item.fitProfile,
+    );
+
     setState(() {
-      scale = 1.0;
-      offsetX = 0.0;
-      offsetY = 0.0;
-      rotation = 0.0;
+      scale = automatic.cropScale;
+      offsetX = automatic.offsetX;
+      offsetY = automatic.offsetY;
+      rotation = automatic.rotation;
       _activeSnapSlotId = null;
       _isDragging = false;
     });
@@ -299,7 +319,8 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Drag to move. Scroll to zoom. Use buttons to rotate.',
+                      'Drag to move. Use two fingers to scale and rotate. '
+                      'Mouse wheel zoom and rotation buttons are also available.',
                       style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -350,9 +371,9 @@ class _AdjustClothingPageState extends State<AdjustClothingPage> {
                           onPointerSignal: _handlePointerSignal,
                           child: GestureDetector(
                             behavior: HitTestBehavior.translucent,
-                            onPanStart: _handleDragStart,
-                            onPanUpdate: _handleDragUpdate,
-                            onPanEnd: _handleDragEnd,
+                            onScaleStart: _handleScaleStart,
+                            onScaleUpdate: _handleScaleUpdate,
+                            onScaleEnd: _handleScaleEnd,
                             child: Container(
                               decoration: BoxDecoration(
                                 border: Border.all(
